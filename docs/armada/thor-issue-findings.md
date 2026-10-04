@@ -1,0 +1,28 @@
+# Thor issue findings (bodies and comments read)
+> Scope: what the key Thor-related GitHub issues actually say, beyond titles · Researched: 2026-10-03 · Confidence: medium — these are user/maintainer statements in issue threads, **not verified on hardware** (reporters' root-cause claims are tagged as theirs)
+
+Index of all Thor issues/PRs: [thor-issues-and-prs](thor-issues-and-prs.md). All data from `refs/_gh/issues.json` (export 2026-10-02).
+
+## Open
+| # | Finding |
+|---|---|
+| **#529** external monitor (DP-1) hard freeze (OS `20260915`, kernel 7.2.3) | Reporter: plugging a Type-C monitor causes lockup/reboot; `/sys/class/drm/` shows `card0-DP-1` but enabling it freezes. Reporter's root cause: Qualcomm `ucsi_pmic_glink.ko` is absent from `/lib/modules/7.2.3/kernel/drivers/usb/typec/ucsi/` (only `cros_ec_ucsi`, `ucsi_ccg`); dmesg shows pmic-glink failing to link to `usb0-sbu-mux`. 0 comments, no maintainer reply — **reporter's diagnosis, unconfirmed**. **On-device check 2026-10-03 (OS `20260926`, kernel 7.2.6):** `CONFIG_UCSI_PMIC_GLINK=y` (built in) and a `ucsi-source-psy-pmic_glink` supply is registered, so the "module missing" cause does not hold there; the freeze itself was not retested ([device-observed](../hardware/device-observed.md)) [observed]. [src: refs/_gh/issues.json#529] |
+| **#564** SD card corruption (`20260915`) | Two 256 GB Kingston cards stopped being recognised after an in-OS game uninstall + crash. Maintainer: no other reports of Armada causing this. Reporter later found those card models "notorious for failing" on Steam Deck/Raspberry Pi and concluded it was probably unrelated to Armada. **Status: likely hardware luck, not an Armada bug.** [src: refs/_gh/issues.json#564] |
+| **#338** can't boot from SD/USB when Armada is installed internally (`20260817`, ABL v1.1.7) | Choosing Linux + source SD/USB gives "cannot find /system/flash" then reboot; a second user saw the same with a Thorch USB drive. Inverse (ROCKNIX internal, Armada on SD) works. Cause not stated. [src: refs/_gh/issues.json#338] |
+| #201 / #202 / #563 bottom-screen brightness | Bottom panel doesn't dim as low as top in desktop mode (Android's slider keeps both similar); in `20260927` the second slider (affects both screens) reverts to the Armada Control value on release. [src: refs/_gh/issues.json#201, #563] |
+| #449 core pinning | Reporter lists games (Dark Souls 1–3, Psychonauts, Valheim, Lies of P, Sulfur, Heretic/Hexen…) that stabilise or speed up when Armada Control cores are set to **Big** (SM8550 has mixed core clusters). [src: refs/_gh/issues.json#449] |
+| #284 HDR not detected | After Thor was marked HDR-capable, several games (RE7, KH3, Soulframe, Sekiro) show a greyed-out HDR toggle; env tricks (`DXVK_HDR`, `PROTON_ENABLE_HDR`, `ENABLE_GAMESCOPE_WSI`) didn't help; someone mentioned forcing 10-bit. [src: refs/_gh/issues.json#284] |
+| #89 charging ~4 W (`20260628`) | Slow charge under Armada, 0 W when powered off (a Thor Max report; Odin 3 users agree). A commenter says ROCKNIX shipped the Odin 2's charger firmware on the Thor until it got its own on **2026-08-02** (ROCKNIX commit `47e077d0bb`) and the report predates that. Still open. [src: refs/_gh/issues.json#89] |
+
+## Closed (resolutions)
+- **#8 "AYN Thor"** (2026-06-09→06-14, 29 comments): maintainer hadn't prioritised Thor "because I didn't know if people would want the bottom screen to be empty"; Thor owners said they play fine with the bottom empty; ROCKNIX already had limited dual screen. [src: refs/_gh/issues.json#8]
+- **#28 second screen** (→2026-07-19): maintainer had to **disable the lower screen at the kernel level** early on because Steam was finding it for brightness control instead of the top screen, hoping to later patch gamescope/primary-panel selection; later superseded by the dual-screen work ([dual-screen](dual-screen.md)). [src: refs/_gh/issues.json#28]
+- **#57 "Very hot"** (→07-15, 17 comments): fans reportedly not spinning (one user saw fan RPM `-273` in a Decky fan plugin; CPU 97–100 °C in Performance mode at 47% load); maintainer tweaked fan curves "before the final release"; Retroid Pocket 6 users found the change loud. Related: `ec4bf0c` "Lower fan speeds at bottom of curves" (2026-07-14). [src: refs/_gh/issues.json#57] [src: refs/upstream/armada@574da80:commit ec4bf0c]
+- **#61 fast charging** (→08-03): Thor often stuck at ~7 W instead of 30/35 W; fixed by commit `738b52f` per a commenter — its message is "Use correct firmware for Thor" (2026-08-02), consistent with the #89 note about Thor charger firmware. [src: refs/_gh/issues.json#61]
+- **#126 stuck on balanced profile**: user error — profiles are *edited* in Armada Control, *selected* in the QAM Performance tab ([faq](faq.md)); a commenter also recalled a temporary forced profile while overheating was being fixed. [src: refs/_gh/issues.json#126]
+- **#129 dual-screen improvements**: collection of items (suppress KDE external output picker, initial placement side-by-side instead of below, keyboard always on bottom screen → PR #194); closed in favour of individual issues. [src: refs/_gh/issues.json#129]
+- **#306** black top screen returning desktop→Game Mode: closed "fixed by commit `dc7f4cc`" per a commenter; that commit's message is only "chore(Containerfile): update terra packages" (2026-08-24), so the actual fix is a package bump [UNVERIFIED which package]. **#347** keep second screen running in Big Picture: reportedly enabled via an Armada Control option (restarts apps). [src: refs/_gh/issues.json#306, #347]
+
+## Sources
+- [S1] refs/_gh/issues.json (issue bodies and comments, numbers cited inline)
+- [S2] refs/upstream/armada@574da80 (commit `ec4bf0c` and recent fan/sleep commits via `git log`)
