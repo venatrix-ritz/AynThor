@@ -27,5 +27,7 @@
 Surveyed over SSH — see [device-observed](../hardware/device-observed.md). **Resolved/updated:** this unit is a Max 1 TB; internal-install partition layout; fan RPM readable; dual-screen bootstrap markers present; #529's "module missing" cause not true on 7.2.6.
 Privileged read-only checks done via sudo (`bootc status`, `/boot/efi`, mmc ios, dmesg, ABL hashes, UFS descriptor).
 SD card inserted 2026-10-03: stock kernel negotiates UHS-I **SDR104 @ 202 MHz**; throughput 89.5 MB/s.
-**Still open on-device:** whether `armada-bottom-gamescope` runs when the dual-screen option is enabled in Game Mode, the monitor-plug behaviour (#529, needs a physical monitor plugged), and whether IRQ 199 "Sensor" is the lid hall sensor.
-Access: PC key is authorized for `armada@<thor-ip>` (IP may change; Armada Tools → Remote Access shows it).
+- ~~Lid hall sensor IRQ~~ resolved: Confirmed on hardware. `/proc/interrupts` IRQ 199 is `msmgpio 17 Edge Hall Lid Sensor` (`gpio-keys-lid`, `SW_LID`, wakeup-source). Opening/closing lid triggers clean `s2idle` suspend/wake cycle.
+- ~~armada-bottom-gamescope in Game Mode~~ resolved: Runs natively out of the box in testing image `20261004.c32590d` (`gamescope --backend drm --drm-lease-client /tmp/gamescope-lease.sock --drm-lease-yield`).
+- **Still open on-device:** External USB-C DP Alt-mode display crash/reboot root cause triage (#529).
+Access: PC key is authorized for `armada@<thor-ip>` (IP may change; Armada Tools → Remote Access shows it). Passwordless sudo active via `/etc/sudoers.d/91-claude-full`.
