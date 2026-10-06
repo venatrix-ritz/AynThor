@@ -1,0 +1,55 @@
+#!/bin/bash
+# thor-charge-limit: 80% battery ceiling on the AYN Thor.
+#  boot : write 80 to charge_control_end_threshold (AYN firmware capacity-limit flag)
+#  loop : on charger and capacity>=80 -> clamp charge current (charge_control_limit=1000 uA)
+#         capacity<=77 or charger off -> release (write charge_control_limit_max)
+set -euo pipefail
+B="/sys/class/power_supply/battery"
+U="/sys/class/power_supply/qcom-battmgr-usb"
+THR="$B/charge_control_end_threshold"
+LIM="$B/charge_control_limit"
+MAX="$B/charge_control_limit_max"
+
+log(){ logger -t thor-charge-limit -- "$*"; }
+
+for i in $(seq 1 30); do
+    [ -e "$LIM" ] && [ -e "$U/online" ] && cat "$B/capacity" >/dev/null 2>&1 && break
+    sleep 2
+done
+
+[ -e "$LIM" ] || { log "charge_control_limit sysfs node not present, exiting"; exit 0; }
+
+maxv=$(cat "$MAX" 2>/dev/null || echo 9000000)
+state=released
+
+release(){
+    echo "$maxv" > "$LIM" 2>/dev/null && state=released && log "Released charge limit (max=$maxv) cap=$(cat $B/capacity 2>/dev/null || echo 0)"
+}
+
+clamp(){
+    echo 1000 > "$LIM" 2>/dev/null && state=clamped && log "Clamped charge limit at 80% cap=$(cat $B/capacity 2>/dev/null || echo 0)"
+}
+
+trap 'release; exit 0' TERM INT
+
+if [ -e "$THR" ]; then
+    echo 80 > "$THR" 2>/dev/null && log "firmware charge_control_end_threshold set to 80"
+fi
+
+cap=$(cat "$B/capacity" 2>/dev/null || echo 0)
+on=$(cat "$U/online" 2>/dev/null || echo 0)
+if [ "$on" = 1 ] && [ "$cap" -ge 80 ]; then
+    clamp
+else
+    release
+fi
+
+while sleep 30; do
+    cap=$(cat "$B/capacity" 2>/dev/null) || continue
+    on=$(cat "$U/online" 2>/dev/null) || continue
+    if [ "$state" = released ] && [ "$on" = 1 ] && [ "$cap" -ge 80 ]; then
+        clamp
+    elif [ "$state" = clamped ] && { [ "$on" != 1 ] || [ "$cap" -le 77 ]; }; then
+        release
+    fi
+done

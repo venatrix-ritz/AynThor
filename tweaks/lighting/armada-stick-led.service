@@ -1,0 +1,13 @@
+[Unit]
+Description=Armada / Thor Stick RGB LED Daemon (Reactive & Ambilight)
+ConditionPathExists=/sys/class/leds/l:r1
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/stick-led-color daemon
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
