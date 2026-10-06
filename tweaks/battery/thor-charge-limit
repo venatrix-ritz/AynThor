@@ -1,8 +1,7 @@
 #!/bin/bash
-# thor-charge-limit: 80% battery ceiling on the AYN Thor.
-#  boot : write 80 to charge_control_end_threshold (AYN firmware capacity-limit flag)
-#  loop : on charger and capacity>=80 -> clamp charge current (charge_control_limit=1000 uA)
-#         capacity<=77 or charger off -> release (write charge_control_limit_max)
+# thor-charge-limit: 80% battery ceiling protection for AYN Thor.
+# Sets PMIC firmware threshold via charge_control_end_threshold, and if supported,
+# clamps charge current via charge_control_limit.
 set -euo pipefail
 B="/sys/class/power_supply/battery"
 U="/sys/class/power_supply/qcom-battmgr-usb"
@@ -13,11 +12,30 @@ MAX="$B/charge_control_limit_max"
 log(){ logger -t thor-charge-limit -- "$*"; }
 
 for i in $(seq 1 30); do
-    [ -e "$LIM" ] && [ -e "$U/online" ] && cat "$B/capacity" >/dev/null 2>&1 && break
-    sleep 2
+    [ -e "$B/capacity" ] && [ -e "$U/online" ] && break
+    sleep 1
 done
 
-[ -e "$LIM" ] || { log "charge_control_limit sysfs node not present, exiting"; exit 0; }
+# 1. Apply hardware firmware threshold (standard Linux power_supply attribute)
+applied_threshold=0
+if [ -e "$THR" ]; then
+    if echo 80 > "$THR" 2>/dev/null; then
+        applied_threshold=1
+        log "firmware charge_control_end_threshold set to 80 (readback=$(cat "$THR" 2>/dev/null || echo '?'))"
+    fi
+fi
+
+# 2. Check for optional charge_control_limit current clamping
+if [ ! -e "$LIM" ]; then
+    if [ "$applied_threshold" -eq 1 ]; then
+        log "Hardware charge_control_end_threshold active. Current-limit node absent on this kernel; sleeping."
+        # Sleep indefinitely while keeping the service active to maintain the state
+        exec sleep infinity
+    else
+        log "Neither charge_control_end_threshold nor charge_control_limit found; exiting."
+        exit 0
+    fi
+fi
 
 maxv=$(cat "$MAX" 2>/dev/null || echo 9000000)
 state=released
@@ -31,10 +49,6 @@ clamp(){
 }
 
 trap 'release; exit 0' TERM INT
-
-if [ -e "$THR" ]; then
-    echo 80 > "$THR" 2>/dev/null && log "firmware charge_control_end_threshold set to 80"
-fi
 
 cap=$(cat "$B/capacity" 2>/dev/null || echo 0)
 on=$(cat "$U/online" 2>/dev/null || echo 0)

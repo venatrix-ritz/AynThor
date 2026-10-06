@@ -13,7 +13,7 @@ deploy_audio() {
     echo "==> Installing PipeWire Speaker EQ Tuning..."
     ssh "${THOR_HOST}" "mkdir -p ~/.config/pipewire/pipewire.conf.d"
     scp "${SCRIPT_DIR}/audio/50-thor-speaker-eq.conf" "${THOR_HOST}:~/.config/pipewire/pipewire.conf.d/50-thor-speaker-eq.conf"
-    ssh "${THOR_HOST}" "systemctl --user restart pipewire.service"
+    ssh "${THOR_HOST}" "systemctl --user restart pipewire.service pipewire-pulse.service"
     echo "==> Speaker EQ installed and PipeWire reloaded."
 }
 
