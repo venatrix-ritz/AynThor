@@ -20,6 +20,12 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
+try:
+    gi.require_version("AppIndicator3", "0.1")
+    from gi.repository import AppIndicator3
+    HAS_APP_INDICATOR = True
+except Exception:
+    HAS_APP_INDICATOR = False
 from gi.repository import Gdk, GLib, Gtk
 
 # Add bin directory and parent directory to sys.path
@@ -43,7 +49,7 @@ from engine import (
     UInputBridge,
     raw_to_screen,
 )
-from keyboard_layout import KeyboardLayout
+from keyboard_layout import Key, KeyboardLayout
 from system_stats import HardwareStats
 
 SOCKET_PATH = f"/run/user/{os.getuid()}/thor-input.sock"
@@ -70,6 +76,7 @@ class ThorApp:
         self.gesture = TouchGestureProcessor(self.bridge, self.logger)
         self.kb_layout = KeyboardLayout(0, HEADER_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - HEADER_HEIGHT)
         self.held_ui_button: str | None = None
+        self.held_ui_button_tid: int | None = None
         self.active_key_press: int | None = None
         self.last_key_label = ""
         self.last_event_time = time.time()
@@ -77,7 +84,17 @@ class ThorApp:
         self.frame_count = 0
         self.last_fps_calc = time.time()
 
+        # Continuous key repeat state
+        self.held_key: Key | None = None
+        self.held_key_tid: int | None = None
+        self._repeat_stop = threading.Event()
+        self._repeat_thread: threading.Thread | None = None
+
         self.load_config()
+
+        # AppIndicator for desktop/plasma panel
+        self.indicator = None
+        self._setup_indicator()
 
         # Touch input thread
         self.touch_fd = -1
@@ -91,6 +108,8 @@ class ThorApp:
         # UI Window
         self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.window.set_title("Touch Master")
+        self.window.set_decorated(False)
+        self.window.set_resizable(False)
         self.window.set_default_size(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.window.fullscreen()
         self.window.connect("destroy", self.on_destroy)
@@ -141,6 +160,105 @@ class ThorApp:
             split_y = 500.0
             self.kb_layout.update_bounds(0, split_y, SCREEN_WIDTH, SCREEN_HEIGHT - split_y)
 
+    def _setup_indicator(self) -> None:
+        if not HAS_APP_INDICATOR:
+            return
+        try:
+            self.indicator = AppIndicator3.Indicator.new(
+                "touch-master",
+                "touch-master",
+                AppIndicator3.IndicatorCategory.APPLICATION_STATUS,
+            )
+            self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
+
+            menu = Gtk.Menu()
+
+            hdr = Gtk.MenuItem(label="Touch Master")
+            hdr.set_sensitive(False)
+            menu.append(hdr)
+            menu.append(Gtk.SeparatorMenuItem())
+
+            for mode_key, mode_name in [
+                ("trackpad", "Trackpad Mode"),
+                ("split", "Split Mode"),
+                ("keyboard", "Keyboard Mode"),
+                ("settings", "Quick Controls"),
+            ]:
+                item = Gtk.MenuItem(label=mode_name)
+                item.connect("activate", lambda _, m=mode_key: self.set_mode(m))
+                menu.append(item)
+
+            menu.append(Gtk.SeparatorMenuItem())
+
+            mgr_item = Gtk.MenuItem(label="Touch Master Manager...")
+            mgr_item.connect("activate", self._launch_manager)
+            menu.append(mgr_item)
+
+            menu.append(Gtk.SeparatorMenuItem())
+
+            stop_item = Gtk.MenuItem(label="Stop Touch Master")
+            stop_item.connect("activate", self._stop_via_indicator)
+            menu.append(stop_item)
+
+            menu.show_all()
+            self.indicator.set_menu(menu)
+        except Exception as err:
+            self.logger.log(DebugCode.ERR_SOCKET_PROTOCOL, f"AppIndicator init: {err}")
+
+    def _launch_manager(self, *_) -> None:
+        try:
+            import subprocess
+
+            mgr_script = str(SCRIPT_DIR / "touch_master_manager.py")
+            env = os.environ.copy()
+            if env.get("DISPLAY") == ":1":
+                env["DISPLAY"] = ":0"
+            subprocess.Popen([sys.executable, mgr_script], env=env)
+        except Exception as err:
+            self.logger.log(DebugCode.ERR_SOCKET_PROTOCOL, f"launch manager: {err}")
+
+    def _stop_via_indicator(self, *_) -> None:
+        try:
+            import subprocess
+
+            if os.path.exists(CONFIG_PATH):
+                with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+            else:
+                cfg = {}
+            cfg["enabled"] = False
+            with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2)
+            subprocess.Popen(["systemctl", "--user", "stop", "touch-master.service"])
+            subprocess.Popen(["systemctl", "--user", "disable", "touch-master.service"])
+        except Exception as err:
+            self.logger.log(DebugCode.ERR_SOCKET_PROTOCOL, f"stop via indicator: {err}")
+
+    def _start_key_repeat(self, key: Key) -> None:
+        self._stop_key_repeat()
+        self._repeat_stop.clear()
+
+        def _worker():
+            # Initial hold delay before repeating (350ms standard)
+            if self._repeat_stop.wait(0.35):
+                return
+            while not self._repeat_stop.is_set():
+                if self.held_key is not key:
+                    break
+                shift_on = self.kb_layout.shift_active or self.kb_layout.caps_lock
+                if shift_on:
+                    self.bridge.key(42, True)
+                self.bridge.tap_key(key.code)
+                if self._repeat_stop.wait(0.06):
+                    break
+
+        self._repeat_thread = threading.Thread(target=_worker, daemon=True)
+        self._repeat_thread.start()
+
+    def _stop_key_repeat(self) -> None:
+        self._repeat_stop.set()
+        self._repeat_thread = None
+
     def start(self) -> None:
         self._start_touch_reader()
         self._start_ipc_server()
@@ -161,6 +279,7 @@ class ThorApp:
 
     def cleanup(self) -> None:
         self.logger.log(DebugCode.DAEMON_STOPPING)
+        self._stop_key_repeat()
         self.touch_stop.set()
         self.ipc_stop.set()
         if self.touch_fd >= 0:
@@ -211,13 +330,20 @@ class ThorApp:
                 if not r:
                     continue
                 try:
-                    data = os.read(self.touch_fd, EVENT_STRUCT.size * 64)
+                    data = os.read(self.touch_fd, EVENT_STRUCT.size * 256)
                 except (BlockingIOError, OSError):
                     continue
 
                 for off in range(0, len(data) - EVENT_STRUCT.size + 1, EVENT_STRUCT.size):
                     sec, usec, etype, code, value = EVENT_STRUCT.unpack_from(data, off)
-                    if etype == EV_ABS:
+                    if etype == EV_SYN and code == 3:
+                        # SYN_DROPPED: hardware buffer overflowed, flush and resync state
+                        raw.clear()
+                        tracking.clear()
+                        active_contacts.clear()
+                        self.gesture.reset_all()
+                        continue
+                    elif etype == EV_ABS:
                         if code == ABS_MT_SLOT:
                             slot = value
                         elif code == ABS_MT_TRACKING_ID:
@@ -249,6 +375,10 @@ class ThorApp:
                                     active_contacts[tid] = (sx, sy)
                                     self._handle_touch_move(tid, sx, sy, now)
 
+                        if not live and not active_contacts:
+                            self.gesture.reset_all()
+
+
         self.touch_thread = threading.Thread(target=_reader_loop, daemon=True)
         self.touch_thread.start()
 
@@ -272,7 +402,7 @@ class ThorApp:
 
         # 1. Header Navigation Bar (y < 48)
         if y < HEADER_BUTTONS_H:
-            self._handle_header_touch(x, y, True)
+            self._handle_header_touch(tid, x, y, True)
             return
 
         # 2. Status Ribbon (48 <= y < HEADER_HEIGHT) -> tap toggles Quick Settings
@@ -292,21 +422,47 @@ class ThorApp:
         if self.mode == "keyboard" or (self.mode == "split" and y >= 500.0):
             key = self.kb_layout.hit_test(x, y)
             if key:
-                self.active_key_press = key.code
-                self.last_key_label = key.label
                 if key.special == "shift":
-                    self.kb_layout.shift_active = not self.kb_layout.shift_active
-                    self.bridge.key(key.code, self.kb_layout.shift_active)
+                    now_t = time.time()
+                    if self.kb_layout.caps_lock:
+                        self.kb_layout.caps_lock = False
+                        self.kb_layout.shift_active = False
+                        self.bridge.key(42, False)
+                    elif self.kb_layout.shift_active:
+                        if now_t - self.kb_layout.last_shift_time < 0.35:
+                            self.kb_layout.caps_lock = True
+                            self.kb_layout.shift_active = False
+                            self.bridge.key(42, True)
+                        else:
+                            self.kb_layout.shift_active = False
+                            self.bridge.key(42, False)
+                    else:
+                        self.kb_layout.shift_active = True
+                        self.kb_layout.last_shift_time = now_t
+                        self.bridge.key(42, True)
+                    self.active_key_press = key.code
+                    self.held_key = None
+                    self.held_key_tid = tid
+                    GLib.idle_add(self.drawing_area.queue_draw)
                 elif key.special in ("ctrl", "alt", "super"):
                     current = getattr(self.kb_layout, f"{key.special}_active", False)
                     setattr(self.kb_layout, f"{key.special}_active", not current)
                     self.bridge.key(key.code, not current)
+                    self.active_key_press = key.code
+                    self.held_key = None
+                    self.held_key_tid = tid
+                    GLib.idle_add(self.drawing_area.queue_draw)
                 else:
+                    self.active_key_press = key.code
+                    self.held_key = key
+                    self.held_key_tid = tid
+                    shift_on = self.kb_layout.shift_active or self.kb_layout.caps_lock
+                    self.last_key_label = key.shift_label if shift_on else key.label
+                    if shift_on:
+                        self.bridge.key(42, True)
                     self.bridge.tap_key(key.code)
-                    if self.kb_layout.shift_active and not key.is_modifier:
-                        self.kb_layout.shift_active = False
-                        self.bridge.key(42, False)
-                GLib.idle_add(self.drawing_area.queue_draw)
+                    self._start_key_repeat(key)
+                    GLib.idle_add(self.drawing_area.queue_draw)
             return
 
         # 5. Trackpad Mode (or top half of Split)
@@ -316,6 +472,20 @@ class ThorApp:
 
     def _handle_touch_move(self, tid: int, x: float, y: float, now: float) -> None:
         self.last_event_time = time.time()
+        if self.mode == "keyboard" or (self.mode == "split" and y >= 500.0):
+            if self.held_key and tid == self.held_key_tid:
+                if not (self.held_key.x <= x <= self.held_key.x + self.held_key.w and
+                        self.held_key.y <= y <= self.held_key.y + self.held_key.h):
+                    self._stop_key_repeat()
+                    if self.kb_layout.shift_active and not self.kb_layout.caps_lock:
+                        self.kb_layout.shift_active = False
+                        self.bridge.key(42, False)
+                    self.held_key = None
+                    self.held_key_tid = None
+                    self.active_key_press = None
+                    GLib.idle_add(self.drawing_area.queue_draw)
+            return
+
         if y >= HEADER_HEIGHT:
             if self.mode == "settings":
                 # Continuous slider drag in settings
@@ -327,15 +497,25 @@ class ThorApp:
 
     def _handle_touch_up(self, tid: int, now: float) -> None:
         self.last_event_time = time.time()
-        if self.held_ui_button:
+        if self.held_ui_button and (tid == self.held_ui_button_tid or len(self.gesture.active_contacts) == 0):
             if self.held_ui_button == "left":
                 self.bridge.mouse_button(BTN_LEFT, False)
             elif self.held_ui_button == "right":
                 self.bridge.mouse_button(BTN_RIGHT, False)
             self.held_ui_button = None
+            self.held_ui_button_tid = None
             GLib.idle_add(self.drawing_area.queue_draw)
 
-        if self.active_key_press is not None:
+        if self.held_key_tid == tid or len(self.gesture.active_contacts) == 0:
+            self._stop_key_repeat()
+            if self.kb_layout.shift_active and not self.kb_layout.caps_lock:
+                self.kb_layout.shift_active = False
+                self.bridge.key(42, False)
+            self.held_key = None
+            self.held_key_tid = None
+            self.active_key_press = None
+            GLib.idle_add(self.drawing_area.queue_draw)
+        elif self.active_key_press is not None:
             self.active_key_press = None
             GLib.idle_add(self.drawing_area.queue_draw)
 
@@ -344,7 +524,7 @@ class ThorApp:
             if self.show_debug_hud:
                 GLib.idle_add(self.drawing_area.queue_draw)
 
-    def _handle_header_touch(self, x: float, y: float, down: bool) -> None:
+    def _handle_header_touch(self, tid: int, x: float, y: float, down: bool) -> None:
         if 12 <= x <= 132:
             self.set_mode("trackpad")
         elif 140 <= x <= 240:
@@ -360,14 +540,14 @@ class ThorApp:
             GLib.idle_add(self.drawing_area.queue_draw)
         elif 680 <= x <= 820:
             self.held_ui_button = "left"
+            self.held_ui_button_tid = tid
             self.bridge.mouse_button(BTN_LEFT, True)
             GLib.idle_add(self.drawing_area.queue_draw)
         elif 828 <= x <= 968:
             self.held_ui_button = "right"
+            self.held_ui_button_tid = tid
             self.bridge.mouse_button(BTN_RIGHT, True)
             GLib.idle_add(self.drawing_area.queue_draw)
-        elif 1120 <= x <= 1220:
-            self.window.close()
 
     def _handle_settings_touch(self, x: float, y: float) -> None:
         # Card 1: Volume (y = 120 .. 230)
@@ -408,17 +588,27 @@ class ThorApp:
             GLib.idle_add(self.drawing_area.queue_draw)
             return
 
-        # Bottom Action Buttons (y = 850 .. 910)
-        if 850 <= y <= 910:
-            if 30 <= x <= 380:
-                # Diagnostics self-test
-                run_self_diagnostics()
-            elif 400 <= x <= 650:
+        # Bottom Action Buttons (y = 840 .. 915)
+        if 840 <= y <= 915:
+            if 30 <= x <= 310:
+                self.gesture.tap_to_click = not self.gesture.tap_to_click
+                self.save_config()
+            elif 330 <= x <= 610:
+                # Toggle right-click mode between 2-finger and long-press (mutually exclusive)
+                if self.gesture.two_finger_right_click:
+                    self.gesture.two_finger_right_click = False
+                    self.gesture.long_press_right_click = True
+                else:
+                    self.gesture.two_finger_right_click = True
+                    self.gesture.long_press_right_click = False
+                self.save_config()
+            elif 630 <= x <= 910:
                 self.show_debug_hud = not self.show_debug_hud
                 self.save_config()
-            elif 670 <= x <= 920:
+            elif 930 <= x <= 1210:
                 self.set_mode("trackpad")
             GLib.idle_add(self.drawing_area.queue_draw)
+
 
     def _handle_settings_drag(self, x: float, y: float) -> None:
         if 160 <= y <= 220 and 130 <= x <= 950:
@@ -583,7 +773,6 @@ class ThorApp:
         right_active = self.held_ui_button == "right"
         self._draw_button(cr, 680, 6, 140, 36, "Left Click", left_active, accent_color=(0.3, 0.45, 0.95))
         self._draw_button(cr, 828, 6, 140, 36, "Right Click", right_active, accent_color=(0.85, 0.35, 0.35))
-        self._draw_button(cr, 1120, 6, 100, 36, "✕ Close", False)
 
     def _draw_status_ribbon(self, cr: cairo.Context) -> None:
         """Render live system monitoring ribbon across top of AMOLED display."""
@@ -695,65 +884,18 @@ class ThorApp:
         cr.stroke()
         cr.new_path()
 
-        # If Edge Scroll is toggled on, draw a clean rectangle indicating the scroll area
-        if self.gesture.edge_scroll_enabled:
-            zone_x = self.gesture.edge_scroll_x_min
-            zone_y = self.gesture.edge_scroll_y_min
-            zone_w = self.gesture.edge_scroll_x_max - self.gesture.edge_scroll_x_min
-            zone_h = self.gesture.edge_scroll_y_max - self.gesture.edge_scroll_y_min
-
-            is_active = self.gesture.edge_scroll_thumb_y is not None
-
-            self._round_rect(cr, zone_x, zone_y, zone_w, zone_h, 12.0)
-            if is_active:
-                # Active touch highlight inside scroll rectangle
-                cr.set_source_rgba(0.15, 0.45, 0.85, 0.22)
-                cr.fill_preserve()
-                cr.set_source_rgba(0.25, 0.75, 1.0, 0.85)
-                cr.set_line_width(1.5)
-                cr.stroke()
-                cr.new_path()
-
-                # Subtle touch indicator pip at current drag position
-                ty = max(zone_y + 8.0, min(zone_y + zone_h - 28.0, self.gesture.edge_scroll_thumb_y - 10.0))
-                self._round_rect(cr, zone_x + 8.0, ty, zone_w - 16.0, 20.0, 6.0)
-                cr.set_source_rgba(0.30, 0.80, 1.0, 0.90)
-                cr.fill()
-                cr.new_path()
-            else:
-                # Resting indicator rectangle defining the scroll zone
-                cr.set_source_rgba(0.06, 0.08, 0.12, 0.65)
-                cr.fill_preserve()
-                cr.set_source_rgba(0.22, 0.26, 0.35, 0.75)
-                cr.set_line_width(1.0)
-                cr.stroke()
-                cr.new_path()
-
-                # Subtle vertical indicator
-                cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-                cr.set_font_size(18.0)
-                cr.set_source_rgba(0.35, 0.40, 0.52, 0.75)
-                ext = cr.text_extents("↕")
-                cr.move_to(zone_x + (zone_w - ext.width) / 2.0, zone_y + zone_h / 2.0 + ext.height / 2.0)
-                cr.show_text("↕")
-                cr.new_path()
-
-        # Center prompt hint
+        # Center prompt hint (clean, no scrollbar clutter)
         cr.set_source_rgb(0.30, 0.34, 0.42)
         cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        cr.set_font_size(20.0)
-        if self.gesture.edge_scroll_enabled:
-            hint = "Touch Master: 1 finger moves · Right edge scrolls · Tap clicks · Flick glides"
-        else:
-            hint = "Touch Master: 1 finger moves · Tap clicks · 2 fingers scroll · Flick glides"
+        cr.set_font_size(18.0)
+        hint = "Touch Master: 1 finger moves · Tap clicks · 2 fingers scroll · Flick glides"
         extents = cr.text_extents(hint)
-        avail_w = pad_w - (80.0 if self.gesture.edge_scroll_enabled else 0.0)
-        cr.move_to(pad_x + (avail_w - extents.width) / 2.0, pad_y + (pad_h + extents.height) / 2.0)
+        cr.move_to(pad_x + (pad_w - extents.width) / 2.0, pad_y + (pad_h + extents.height) / 2.0)
         cr.show_text(hint)
 
     def _draw_keyboard(self, cr: cairo.Context) -> None:
-        """Render virtual keyboard with clean key highlighting and dual symbol labels."""
-        shift_on = self.kb_layout.shift_active
+        """Render virtual keyboard with clean key highlighting, vector arrows, and dual symbol labels."""
+        shift_on = self.kb_layout.shift_active or self.kb_layout.caps_lock
 
         for row in self.kb_layout.rows:
             for k in row:
@@ -787,42 +929,83 @@ class ThorApp:
                     cr.stroke()
                 cr.new_path()  # Path clean reset
 
-                # Draw Labels
+                # Draw Labels / Glyphs
                 if k.has_sub_symbol:
                     # Keys with dual symbols (e.g. 1 / !, - / _, [ / {)
-                    prim = k.label
-                    sub = k.shift_label
+                    # When shift is active, swap them so the shifted symbol is primary!
+                    if shift_on:
+                        prim = k.shift_label
+                        sub = k.label
+                    else:
+                        prim = k.label
+                        sub = k.shift_label
 
                     # Primary character (centered / lower)
                     cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-                    cr.set_font_size(18.0)
-                    if shift_on:
-                        cr.set_source_rgb(0.60, 0.64, 0.72)
+                    cr.set_font_size(14.0)
+                    if is_active:
+                        cr.set_source_rgb(1.0, 1.0, 1.0)
+                    elif shift_on:
+                        cr.set_source_rgb(0.40, 0.85, 1.0)  # Bright cyan when shifted!
                     else:
-                        cr.set_source_rgb(1.0, 1.0, 1.0) if is_active else cr.set_source_rgb(0.92, 0.94, 0.96)
+                        cr.set_source_rgb(0.92, 0.94, 0.96)
                     ext = cr.text_extents(prim)
-                    cr.move_to(k.x + (k.w - ext.width) / 2.0 - 5, k.y + k.h - 13)
+                    cr.move_to(k.x + (k.w - ext.width) / 2.0 - 4, k.y + k.h - 14)
                     cr.show_text(prim)
 
-                    # Secondary shifted symbol (upper-right corner)
-                    cr.set_font_size(14.0)
-                    if shift_on:
-                        cr.set_source_rgb(0.35, 0.85, 1.0)  # Highlighted cyan!
-                    else:
-                        cr.set_source_rgb(0.42, 0.48, 0.58)  # Subtle secondary
+                    # Secondary symbol (upper-right corner)
+                    cr.set_font_size(11.0)
+                    cr.set_source_rgb(0.42, 0.48, 0.58)
                     sub_ext = cr.text_extents(sub)
-                    cr.move_to(k.x + k.w - sub_ext.width - 10, k.y + 20)
+                    cr.move_to(k.x + k.w - sub_ext.width - 10, k.y + 18)
                     cr.show_text(sub)
+
+                elif k.code in (105, 103, 108, 106):  # Left, Up, Down, Right arrows
+                    cx = k.x + k.w / 2.0
+                    cy = k.y + k.h / 2.0
+                    sz = 6.5
+                    if is_active:
+                        cr.set_source_rgb(1.0, 1.0, 1.0)
+                    else:
+                        cr.set_source_rgb(0.92, 0.94, 0.96)
+
+                    if k.code == 105:  # KEY_LEFT
+                        cr.move_to(cx - sz, cy)
+                        cr.line_to(cx + sz * 0.8, cy - sz)
+                        cr.line_to(cx + sz * 0.8, cy + sz)
+                    elif k.code == 106:  # KEY_RIGHT
+                        cr.move_to(cx + sz, cy)
+                        cr.line_to(cx - sz * 0.8, cy - sz)
+                        cr.line_to(cx - sz * 0.8, cy + sz)
+                    elif k.code == 103:  # KEY_UP
+                        cr.move_to(cx, cy - sz)
+                        cr.line_to(cx - sz, cy + sz * 0.8)
+                        cr.line_to(cx + sz, cy + sz * 0.8)
+                    elif k.code == 108:  # KEY_DOWN
+                        cr.move_to(cx, cy + sz)
+                        cr.line_to(cx - sz, cy - sz * 0.8)
+                        cr.line_to(cx + sz, cy - sz * 0.8)
+                    cr.close_path()
+                    cr.fill()
+                    cr.new_path()
+
                 else:
                     # Normal letter or modifier
-                    label = k.shift_label if (shift_on and k.is_letter) else k.label
+                    if k.special == "shift" and self.kb_layout.caps_lock:
+                        label = "CAPS"
+                    elif shift_on and k.is_letter:
+                        label = k.shift_label
+                    else:
+                        label = k.label
+
                     cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-                    cr.set_font_size(20.0 if len(label) == 1 else 16.0)
+                    font_sz = 15.0 if len(label) == 1 else 12.5
+                    cr.set_font_size(font_sz)
 
                     if is_active:
                         cr.set_source_rgb(1.0, 1.0, 1.0)
                     elif shift_on and k.is_letter:
-                        cr.set_source_rgb(0.40, 0.85, 1.0)  # Bright cyan highlight for active uppercase!
+                        cr.set_source_rgb(0.40, 0.85, 1.0)
                     else:
                         cr.set_source_rgb(0.92, 0.94, 0.96)
                     extents = cr.text_extents(label)
@@ -917,9 +1100,19 @@ class ThorApp:
             cr.show_text(val)
 
         # Action Buttons
-        self._draw_button(cr, 30, 850, 350, 60, "Run Self-Test Diagnostics", False, accent_color=(0.2, 0.55, 0.9))
-        self._draw_button(cr, 400, 850, 250, 60, "Toggle Glass HUD", self.show_debug_hud, accent_color=(0.2, 0.65, 0.4))
-        self._draw_button(cr, 670, 850, 250, 60, "Back to Trackpad", False)
+        tap_active = self.gesture.tap_to_click
+        tap_label = "Tap Click: ON" if tap_active else "Tap Click: OFF"
+        self._draw_button(cr, 30, 846, 280, 64, tap_label, tap_active, accent_color=(0.15, 0.55, 0.95))
+
+        right_2f = self.gesture.two_finger_right_click
+        right_label = "Right: 2-Finger" if right_2f else "Right: Press-Hold"
+        self._draw_button(cr, 330, 846, 280, 64, right_label, right_2f, accent_color=(0.2, 0.75, 0.65))
+
+        hud_label = "Glass HUD: ON" if self.show_debug_hud else "Glass HUD: OFF"
+        self._draw_button(cr, 630, 846, 280, 64, hud_label, self.show_debug_hud, accent_color=(0.2, 0.65, 0.4))
+
+        self._draw_button(cr, 930, 846, 280, 64, "Back to Trackpad", False, accent_color=(0.38, 0.25, 0.85))
+
 
     def _draw_slider_card(
         self,
