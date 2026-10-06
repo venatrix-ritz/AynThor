@@ -5,7 +5,7 @@ After=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/stick-led-color daemon
+ExecStart=/var/local/bin/stick-led-color daemon
 Restart=on-failure
 RestartSec=2
 

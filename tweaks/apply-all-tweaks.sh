@@ -22,8 +22,9 @@ deploy_battery() {
     scp "${SCRIPT_DIR}/battery/thor-charge-limit" "${THOR_HOST}:/tmp/thor-charge-limit"
     scp "${SCRIPT_DIR}/battery/thor-charge-limit.service" "${THOR_HOST}:/tmp/thor-charge-limit.service"
     ssh "${THOR_HOST}" "
-        sudo mv /tmp/thor-charge-limit /usr/local/bin/thor-charge-limit
-        sudo chmod +x /usr/local/bin/thor-charge-limit
+        sudo mkdir -p /var/local/bin
+        sudo mv /tmp/thor-charge-limit /var/local/bin/thor-charge-limit
+        sudo chmod +x /var/local/bin/thor-charge-limit
         sudo mv /tmp/thor-charge-limit.service /etc/systemd/system/thor-charge-limit.service
         sudo systemctl daemon-reload
         sudo systemctl enable --now thor-charge-limit.service
@@ -36,8 +37,9 @@ deploy_lighting() {
     scp "${SCRIPT_DIR}/lighting/stick-led-color.py" "${THOR_HOST}:/tmp/stick-led-color"
     scp "${SCRIPT_DIR}/lighting/armada-stick-led.service" "${THOR_HOST}:/tmp/armada-stick-led.service"
     ssh "${THOR_HOST}" "
-        sudo mv /tmp/stick-led-color /usr/local/bin/stick-led-color
-        sudo chmod +x /usr/local/bin/stick-led-color
+        sudo mkdir -p /var/local/bin
+        sudo mv /tmp/stick-led-color /var/local/bin/stick-led-color
+        sudo chmod +x /var/local/bin/stick-led-color
         sudo mv /tmp/armada-stick-led.service /etc/systemd/system/armada-stick-led.service
         sudo systemctl daemon-reload
         sudo systemctl enable --now armada-stick-led.service
