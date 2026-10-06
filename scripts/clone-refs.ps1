@@ -39,6 +39,9 @@ $targets = @(
   @{ dir='thor-android/ayn_thor_overlays'; repo='arcath-/ayn_thor_overlays'; mode='shallow'; note='' }
   @{ dir='thor-android/AYN-Thor-WiFi-Recovery'; repo='JoelMomo/AYN-Thor-WiFi-Recovery'; mode='shallow'; note='' }
   @{ dir='thor-android/ayn-thor-root-guide'; repo='meltingscales/ayn-thor-root-guide'; mode='shallow'; note='' }
+  @{ dir='thor-android/trackpadDS';          repo='minhf1/trackpadDS';         mode='shallow'; note='bottom screen trackpad overlay' }
+  @{ dir='thor-linux/DualCPY-Linux';         repo='DrSkyfaR/DualCPY-Linux';    mode='shallow'; note='multi-window dual-screen scrcpy launcher for Linux' }
+  @{ dir='thor-tools/DualCPY';               repo='theswest/DualCPY';          mode='shallow'; note='multi-window dual-screen scrcpy launcher for Windows' }
 )
 # forks fetched as extra remotes into upstream/armada (shares objects; only diffs are downloaded)
 $forkRemotes = @(

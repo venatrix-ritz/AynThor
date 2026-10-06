@@ -23,5 +23,8 @@
   "thor-android/Thor-Swapper": "77aa147bf2dd85133990154f87905d7420e20461",
   "thor-android/dualscreen-mods": "798643863fb833c0e6f86391991b7fd0481c3776",
   "thor-android/ayn-thor-config": "1961dee035fb711c72a8b3d68f172351a606a8e0",
-  "upstream/armada-packages": "f02c7c89eb2a1fe4516f88861040fb144426ad7f"
+  "upstream/armada-packages": "f02c7c89eb2a1fe4516f88861040fb144426ad7f",
+  "thor-android/trackpadDS": "c3b759ed658f3a67df5a6792ffdc5fbd1bb2bac2",
+  "thor-linux/DualCPY-Linux": "3b78064a646d42b411f9cc27fe1f1c8e8c3efc3b",
+  "thor-tools/DualCPY": "1168355152d0848137f844ae14c9005063e439bf"
 }
