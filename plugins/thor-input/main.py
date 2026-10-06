@@ -49,15 +49,16 @@ def _default_config() -> dict:
         "scroll_speed": 3,
         "edge_scroll": False,
         "tap_to_click": True,
-        "long_press_right_click": True,
+        "long_press_right_click": False,
         "long_press_delay_ms": 450,
         "two_finger_right_click": True,
-        "three_finger_middle_click": True,
-        "pinch_zoom_enabled": True,
-        "three_finger_swipe_enabled": True,
-        "drag_lock_enabled": True,
+        "three_finger_middle_click": False,
+        "pinch_zoom_enabled": False,
+        "three_finger_swipe_enabled": False,
+        "drag_lock_enabled": False,
         "debug_hud": False,
     }
+
 
 
 def _read_config() -> dict:
@@ -84,6 +85,43 @@ class Plugin:
     def __init__(self) -> None:
         self.logger = DebugLogger("plugin")
 
+    async def _main(self) -> None:
+        """Called automatically by Decky Loader on startup."""
+        self.logger.log(DebugCode.DAEMON_STARTING, "Decky initialized Touch Master plugin")
+        cfg = _read_config()
+        if cfg.get("enabled", True):
+            if not _is_running():
+                self._start_service()
+        else:
+            if _is_running():
+                self._stop_service()
+
+    def _start_service(self) -> None:
+        if os.getuid() == 0:
+            cmd_start = ["systemctl", "--machine=armada@.host", "--user", "start", "touch-master.service"]
+            cmd_enable = ["systemctl", "--machine=armada@.host", "--user", "enable", "touch-master.service"]
+        else:
+            cmd_start = ["systemctl", "--user", "start", "touch-master.service"]
+            cmd_enable = ["systemctl", "--user", "enable", "touch-master.service"]
+        try:
+            subprocess.run(cmd_enable, check=False, timeout=5.0)
+            subprocess.run(cmd_start, check=False, timeout=5.0)
+        except Exception as e:
+            self.logger.log(DebugCode.ERR_SERVICE_START, f"Failed starting service: {e}")
+
+    def _stop_service(self) -> None:
+        if os.getuid() == 0:
+            cmd_stop = ["systemctl", "--machine=armada@.host", "--user", "stop", "touch-master.service"]
+            cmd_disable = ["systemctl", "--machine=armada@.host", "--user", "disable", "touch-master.service"]
+        else:
+            cmd_stop = ["systemctl", "--user", "stop", "touch-master.service"]
+            cmd_disable = ["systemctl", "--user", "disable", "touch-master.service"]
+        try:
+            subprocess.run(cmd_stop, check=False, timeout=5.0)
+            subprocess.run(cmd_disable, check=False, timeout=5.0)
+        except Exception as e:
+            self.logger.log(DebugCode.ERR_SERVICE_STOP, f"Failed stopping service: {e}")
+
     async def get_status(self) -> dict:
         def _get():
             running = _is_running()
@@ -102,13 +140,13 @@ class Plugin:
                     "scroll_speed": cfg.get("scroll_speed", 3),
                     "edge_scroll": cfg.get("edge_scroll", False),
                     "tap_to_click": cfg.get("tap_to_click", True),
-                    "long_press_right_click": cfg.get("long_press_right_click", True),
+                    "long_press_right_click": cfg.get("long_press_right_click", False),
                     "long_press_delay_ms": cfg.get("long_press_delay_ms", 450),
                     "two_finger_right_click": cfg.get("two_finger_right_click", True),
-                    "three_finger_middle_click": cfg.get("three_finger_middle_click", True),
-                    "pinch_zoom_enabled": cfg.get("pinch_zoom_enabled", True),
-                    "three_finger_swipe_enabled": cfg.get("three_finger_swipe_enabled", True),
-                    "drag_lock_enabled": cfg.get("drag_lock_enabled", True),
+                    "three_finger_middle_click": cfg.get("three_finger_middle_click", False),
+                    "pinch_zoom_enabled": cfg.get("pinch_zoom_enabled", False),
+                    "three_finger_swipe_enabled": cfg.get("three_finger_swipe_enabled", False),
+                    "drag_lock_enabled": cfg.get("drag_lock_enabled", False),
                     "debug_hud": cfg.get("debug_hud", False),
                     "telemetry": debug_info.get("telemetry", {}),
                     "touch_device": debug_info.get("touch_device", ""),
@@ -129,46 +167,19 @@ class Plugin:
 
     async def set_enabled(self, enabled: bool) -> dict:
         def _set():
-            running = _is_running()
-            if enabled and not running:
-                self.logger.log(DebugCode.DAEMON_STARTING, "Spawning thor_app under armada-run-bottom")
-                # Ensure backlight permissions
-                try:
-                    subprocess.run(
-                        ["chmod", "666", "/sys/class/backlight/ae94000.dsi.0/brightness", "/sys/class/backlight/ae96000.dsi.0/brightness"],
-                        check=False,
-                        timeout=1.0,
-                    )
-                except Exception:
-                    pass
+            cfg = _read_config()
+            cfg["enabled"] = enabled
+            _save_config(cfg)
 
-                if os.getuid() == 0:
-                    cmd = [
-                        "runuser",
-                        "-u",
-                        "armada",
-                        "--",
-                        "/usr/bin/armada-run-bottom",
-                        "--",
-                        "/usr/bin/python3",
-                        APP_PATH,
-                    ]
-                else:
-                    cmd = [
-                        "/usr/bin/armada-run-bottom",
-                        "--",
-                        "/usr/bin/python3",
-                        APP_PATH,
-                    ]
-                subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    start_new_session=True,
-                )
-            elif not enabled and running:
-                self.logger.log(DebugCode.DAEMON_STOPPING, "Sending quit signal to thor-input-app")
-                _send_ipc({"action": "quit"})
+            running = _is_running()
+            if enabled:
+                self.logger.log(DebugCode.DAEMON_STARTING, "Starting touch-master.service via systemd")
+                self._start_service()
+            else:
+                self.logger.log(DebugCode.DAEMON_STOPPING, "Stopping touch-master.service via systemd")
+                if running:
+                    _send_ipc({"action": "quit"})
+                self._stop_service()
             return {"ok": True, "enabled": enabled}
 
         await asyncio.to_thread(_set)
@@ -181,6 +192,7 @@ class Plugin:
                 break
 
         return await self.get_status()
+
 
     async def set_mode(self, mode: str) -> dict:
         def _set():
