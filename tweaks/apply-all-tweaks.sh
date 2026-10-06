@@ -48,10 +48,27 @@ deploy_lighting() {
 }
 
 deploy_system() {
-    echo "==> Applying System Fixes & Display Geometry..."
+    echo "==> Applying System Fixes, WoWLAN & Display Sleep Sync..."
     scp "${SCRIPT_DIR}/system/setup-device-fixes.sh" "${THOR_HOST}:/tmp/setup-device-fixes.sh"
-    ssh "${THOR_HOST}" "bash /tmp/setup-device-fixes.sh; rm -f /tmp/setup-device-fixes.sh"
-    echo "==> System fixes applied."
+    scp "${SCRIPT_DIR}/system/thor-wowlan.service" "${THOR_HOST}:/tmp/thor-wowlan.service"
+    scp "${SCRIPT_DIR}/system/90-wowlan.conf" "${THOR_HOST}:/tmp/90-wowlan.conf"
+    scp "${SCRIPT_DIR}/system/thor-display-sync.py" "${THOR_HOST}:/tmp/thor-display-sync"
+    scp "${SCRIPT_DIR}/system/thor-display-sync.service" "${THOR_HOST}:/tmp/thor-display-sync.service"
+    ssh "${THOR_HOST}" "
+        bash /tmp/setup-device-fixes.sh
+        rm -f /tmp/setup-device-fixes.sh
+        sudo mkdir -p /var/local/bin
+        sudo mv /tmp/thor-display-sync /var/local/bin/thor-display-sync
+        sudo chmod +x /var/local/bin/thor-display-sync
+        sudo mv /tmp/thor-wowlan.service /etc/systemd/system/thor-wowlan.service
+        sudo mv /tmp/thor-display-sync.service /etc/systemd/system/thor-display-sync.service
+        sudo mv /tmp/90-wowlan.conf /etc/NetworkManager/conf.d/90-wowlan.conf
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now thor-wowlan.service
+        sudo systemctl enable --now thor-display-sync.service
+        sudo systemctl reload NetworkManager
+    "
+    echo "==> System fixes, WoWLAN and display sync applied."
 }
 
 show_status() {
@@ -63,6 +80,10 @@ show_status() {
         systemctl is-active thor-charge-limit.service 2>/dev/null || echo 'Inactive/Not installed'
         echo '--- Stick Lighting ---'
         systemctl is-active armada-stick-led.service 2>/dev/null || echo 'Inactive/Not installed'
+        echo '--- Display Sleep Sync ---'
+        systemctl is-active thor-display-sync.service 2>/dev/null || echo 'Inactive/Not installed'
+        echo '--- Wake-on-WLAN ---'
+        iw phy phy0 wowlan show 2>/dev/null || echo 'Not supported/enabled'
         echo '--- Failed Units ---'
         systemctl --failed --no-pager
     "
