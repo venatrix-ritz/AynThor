@@ -22,6 +22,22 @@ deploy_audio() {
 }
 
 deploy_battery() {
+    echo "==> Probing whether the firmware honours charge_control_end_threshold..."
+    # Observed 2026-10-07 on Armada 20261006 (kernel 7.2.6): the write is accepted but reads back 0, so the cap does nothing.
+    probe=$(ssh "${THOR_HOST}" 'bash -s' <<'PROBE'
+T=/sys/class/power_supply/battery/charge_control_end_threshold
+[ -e "$T" ] || { echo missing; exit 0; }
+old=$(cat "$T")
+echo 80 | sudo tee "$T" >/dev/null 2>&1
+new=$(cat "$T")
+echo "$old" | sudo tee "$T" >/dev/null 2>&1
+echo "$new"
+PROBE
+)
+    if [ "$probe" != "80" ] && [ "${THOR_FORCE_BATTERY:-0}" != "1" ]; then
+        echo "ERROR: firmware did not keep the threshold (probe readback: '${probe}'). The 80% cap needs a kernel that supports it (MgeeeeK/thor-armada). Not installing. Set THOR_FORCE_BATTERY=1 to install anyway." >&2
+        return 3
+    fi
     echo "==> Installing Thor 80% Battery Charge Ceiling Protection..."
     scp "${SCRIPT_DIR}/battery/thor-charge-limit" "${THOR_HOST}:/tmp/thor-charge-limit"
     scp "${SCRIPT_DIR}/battery/thor-charge-limit.service" "${THOR_HOST}:/tmp/thor-charge-limit.service"
@@ -114,7 +130,7 @@ case "$MODE" in
         ;;
     --all)
         deploy_audio
-        deploy_battery
+        echo "==> NOTE: --all skips the 80% battery cap: the Thor firmware ignores it on Armada 20261006 (observed 2026-10-07). Use --battery to re-probe."
         deploy_system
         echo "==> NOTE: --all skips the stick-RGB daemon: Armada already ships armada-rgb (Armada Control > RGB) for the Thor and two writers would fight over the LEDs. Use --lighting explicitly if you want it."
         show_status
