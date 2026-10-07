@@ -1,8 +1,8 @@
 # AYN Thor — Exhaustive Component IC & Silicon Inventory
 
-> **Audit 2026-10-07 — partly unverified.** Rows tagged `[src:]` or `[observed]` were not individually re-checked this audit; the sysfs/devicetree values and the ICs without a tag have no citation, and the device has since been reset, so `[observed]` rows cannot be re-run until the Thor is reachable again. Part-number and manufacturer entries that rest on datasheets, not on a linked source, are `[UNVERIFIED]`. See `docs/reference/open-questions.md`.
+> **Audit 2026-10-07 — partly verified.** Re-read on the device today: SoC id `603` rev `2.0` (`/sys/devices/soc0`), board model `AYN Thor` (`/proc/device-tree/model`), UFS `HN8T374ZJKX141` fw rev `X202` (`/sys/block/sda/device`), HTR3212 LED controller at I2C `3-003c`, battery `model_name` string containing `QUECTEL_SA885G…6000MAH` [observed 2026-10-07]. The Quectel "compute base reference" row rests only on that battery string plus a datasheet; every other row, and the datasheet-derived part numbers and manufacturers, is still `[UNVERIFIED]`. See `docs/reference/open-questions.md`.
 
-> Scope: Component-level IC bill of materials, package types, bus topologies, power rails, and kernel drivers, compiled from device queries, devicetree bindings and datasheets · Researched: 2026-10-05 · Confidence: partly unverified (see banner)
+> Scope: Component-level IC bill of materials, package types, bus topologies, power rails, and kernel drivers, compiled from device queries, devicetree bindings and datasheets · Researched: 2026-10-05 · Confidence: partly verified (see banner)
 
 ## 1. Core Processing & Memory
 
