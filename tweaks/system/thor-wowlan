@@ -1,0 +1,32 @@
+#!/bin/bash
+# thor-wowlan: enable Wake-on-WLAN (magic packet) on the Thor's Wi-Fi phy.
+# Finds the Wi-Fi phy instead of assuming phy0, checks the driver advertises WoWLAN, enables,
+# then reads the setting back. Exit 78 = unsupported (unit does not retry), 1 = transient failure.
+set -u
+log(){ logger -t thor-wowlan -- "$*" 2>/dev/null || echo "thor-wowlan: $*" >&2; }
+
+command -v iw >/dev/null 2>&1 || { log "iw is not installed; cannot configure WoWLAN"; exit 78; }
+
+phy=""
+for _ in $(seq 1 "${THOR_WAIT_S:-60}"); do
+    phy=$(iw dev 2>/dev/null | awk '/^phy#/{p=substr($1,5)} /Interface/{print "phy" p; exit}')
+    [ -n "$phy" ] && break
+    sleep 1
+done
+[ -n "$phy" ] || { log "no Wi-Fi phy appeared"; exit 1; }
+
+if ! iw phy "$phy" info 2>/dev/null | grep -qi 'wowlan'; then
+    log "$phy does not advertise WoWLAN support (driver/firmware); nothing to enable"
+    exit 78
+fi
+
+if ! iw phy "$phy" wowlan enable magic-packet 2>/dev/null; then
+    log "ERROR: 'iw phy $phy wowlan enable magic-packet' failed"
+    exit 1
+fi
+
+state=$(iw phy "$phy" wowlan show 2>&1 | tr '\n' ' ')
+case "$state" in
+    *"magic packet"*) log "WoWLAN magic-packet enabled on $phy (readback: $state)";;
+    *) log "WARNING: enable returned success but readback does not show magic packet: $state"; exit 1;;
+esac

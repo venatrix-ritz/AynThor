@@ -1,7 +1,6 @@
 [Unit]
 Description=Thor Dual-Screen Display Sleep & Idle Sync Daemon
-After=armada-control.service gamescope-session-plus@steam.service armada-bottom-gamescope.service
-Wants=armada-bottom-gamescope.service
+After=armada-control.service
 
 [Service]
 Type=simple
