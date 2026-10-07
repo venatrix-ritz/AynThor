@@ -57,3 +57,9 @@ Deploy individually or all at once via `apply-all-tweaks.sh`:
 ./tweaks/apply-all-tweaks.sh --system
 ./tweaks/apply-all-tweaks.sh --status
 ```
+
+---
+
+## Provenance note (added 2026-10-07 by an audit)
+- `lighting/stick-led-color.py` is byte-identical to `system_files/usr/libexec/armada/stick-led-color` on **Ga1dz1's** `stick-rgb-lighting` branch (Ga1dz1/armada, a Retroid Pocket Mini V2 fork; Armada is GPL-2.0-or-later). It was not written for the Thor and is uncredited above — attribute it or replace it. Armada upstream already ships `packages/armada-rgb` with a Thor profile; running both would contend for the same LEDs.
+- The "80 % battery cap", WoWLAN and display-sync items are untested on hardware at the time of this audit; see `docs/reference/open-questions.md`.
