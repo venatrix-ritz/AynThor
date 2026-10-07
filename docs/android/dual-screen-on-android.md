@@ -1,5 +1,8 @@
 # Dual Screen & System Architecture on Android (AYN Thor)
-> Scope: Hardware DTS, SurfaceFlinger, DisplayManager, WindowManager, and community orchestration mechanisms on stock Android 13 and LineageOS · Researched: 2026-10-05 · Confidence: verified against primary device tree sources, IDC configs, and decompiled/open community tools [src: refs/thor-android/]
+
+> **Audit 2026-10-07 — partly unverified.** The 16 `[src:]` tags point at files that exist in `refs/`, but their content was not re-checked. The rest — `Settings.System` keys, `/vendor/usr/idc/*` paths, app package names — has no citation and was not re-verified; treat as `[UNVERIFIED]`. See `docs/reference/open-questions.md`.
+
+> Scope: Hardware DTS, SurfaceFlinger, DisplayManager, WindowManager, and community orchestration mechanisms on stock Android 13 and LineageOS · Researched: 2026-10-05 · Confidence: partly unverified (see banner) [src: refs/thor-android/]
 
 ---
 
