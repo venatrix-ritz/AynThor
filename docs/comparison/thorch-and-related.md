@@ -1,15 +1,19 @@
 # Thorch and Related Linux Distributions
-> Scope: Other Thor-compatible Linux OSes · Researched: 2026-10-04 · Confidence: high
+> Scope: other Thor-compatible Linux OSes · Researched: 2026-10-04, re-sourced 2026-10-07 · Confidence: high for Thorch (read from its repo at `82e7472`)
 
-Alongside Armada OS, the AYN Thor has other community Linux distributions available, often exploring different architectural paths.
-
-## Thorch (Thor + Arch Linux)
-Thorch is an experimental, unofficial OS project for the AYN Thor that runs **Arch Linux ARM** instead of Armada's Fedora base.
-- **Boot and Root**: It builds raw SD card images (.img) with an xt4 or Btrfs root filesystem.
-- **First-Boot**: Unlike Armada's container approach, Thorch runs a fullscreen QML onboarding flow on first login to configure Wi-Fi, passwords, Steam/Waydroid setup, and safe internal installation.
-- **Desktop Environment**: Focuses on KDE Plasma defaults and Plasma Mobile.
-- **Shared DNA**: Thorch shares the same hardware enablement DNA as Armada—it also relies on the ROCKNIX custom ABL and patches, utilizing the same fake Android KERNEL oot.img trick to boot Linux on the SM8550.
-- **Installation**: Like Armada, installing Thorch to internal storage uses a destructive userdata shrink (	horch-install-internal --create-from-userdata) but can alternatively be run entirely from a MicroSD card.
+## Thorch (Thor + Arch Linux ARM)
+Thorch is an experimental, unofficial Arch Linux ARM image for the AYN Thor, built on public ROCKNIX work. It is not affiliated with ROCKNIX, AYN, Valve, KDE or others. [src: refs/thor-linux/thorch@82e7472:README.md#L3-L6; refs/thor-linux/thorch@82e7472:NOTICE.md#L1-L4]
+- **What it adds on top of ROCKNIX:** an Arch root filesystem, a ROCKNIX-derived Thor kernel with a BinderFS/Waydroid config fragment, its own initramfs repacked into the ROCKNIX-compatible boot image, local Arch packages and KDE defaults. [src: refs/thor-linux/thorch@82e7472:README.md#L11-L13]
+- **Image and boot:** first target is a bootable SD image (internal install is "the intended performance path", SD stays the recovery path); a ROCKNIX-ABL-compatible FAT boot partition with a top-level Android boot image `/KERNEL`; roots are ext4 or compressed Btrfs. [src: refs/thor-linux/thorch@82e7472:README.md#L17-L19, #L37-L43]
+- **Desktop:** Plasma Desktop (Wayland) is the default session while touch is being worked on; Plasma Mobile is optional. [src: refs/thor-linux/thorch@82e7472:README.md#L28-L30]
+- **First boot:** `thorch-firstboot` starts a fullscreen QML onboarding flow on first login. [src: refs/thor-linux/thorch@82e7472:README.md#L247; refs/thor-linux/thorch@82e7472:docs/build.md#L250]
+- **Internal install:** `thorch-install-internal`; the `--create-from-userdata` mode shrinks Android `userdata` by deleting and recreating it smaller, which wipes the Android instance. It never flashes or replaces ABL. [src: refs/thor-linux/thorch@82e7472:README.md#L86-L90; refs/thor-linux/thorch@82e7472:docs/internal-install.md#L9, #L40]
+- **Shared base with Armada:** both rely on the ROCKNIX ABL boot layout and the fake-Android-boot-image `/KERNEL` approach. [src: refs/thor-linux/thorch@82e7472:README.md#L37-L41; docs/boot-kernel/boot-chain.md]
+- **Licence:** a custom "Thorch source license" file; see `CREDITS.md`. [src: refs/thor-linux/thorch@82e7472:LICENSE#L1]
 
 ## ROCKNIX
-As mapped in ocknix-relationship.md, ROCKNIX is the grandparent project to both Armada and Thorch. It provides the initial ABL unlocked bootloader, the initial device trees for the AYN Thor and Thor Lite, and the baseline kernel patches for the SM8550 and SM8250 platforms.
+ROCKNIX is the upstream of both: Thorch says the SM8550 and Thor enablement lives there and it "would not boot on Thor without ROCKNIX". [src: refs/thor-linux/thorch@82e7472:README.md#L51-L53] Armada's docs credit ROCKNIX for bootloader, device support, input mappings and audio profiles. [src: refs/upstream/armadaos.dev@26dcfc3:docs/project/credits.md#L1-L3] See `docs/boot-kernel/rocknix-relationship.md`.
+
+## Sources
+- [S1] refs/thor-linux/thorch@82e7472 (README.md, NOTICE.md, LICENSE, docs/build.md, docs/internal-install.md)
+- [S2] refs/upstream/armadaos.dev@26dcfc3:docs/project/credits.md

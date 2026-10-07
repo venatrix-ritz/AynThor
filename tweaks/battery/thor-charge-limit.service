@@ -5,8 +5,9 @@ After=multi-user.target
 [Service]
 Type=simple
 ExecStart=/var/local/bin/thor-charge-limit
-ExecStopPost=/bin/sh -c 'echo 0 > /sys/class/power_supply/battery/charge_control_end_threshold 2>/dev/null; m=$(cat /sys/class/power_supply/battery/charge_control_limit_max 2>/dev/null || echo 9000000); echo $m > /sys/class/power_supply/battery/charge_control_limit 2>/dev/null; true'
-# Exit 78 = firmware rejected / unsupported kernel: stay failed and visible instead of looping.
+# On stop, always put the charge limit back to its maximum (whichever node this kernel has).
+ExecStopPost=/bin/sh -c 'B=/sys/class/power_supply/battery; echo 0 > $$B/charge_control_end_threshold 2>/dev/null; for n in charge_control_limit constant_charge_current; do [ -e $$B/$$n ] || continue; m=$$(cat $$B/$${n}_max 2>/dev/null || echo 9000000); echo $$m > $$B/$$n 2>/dev/null; done; true'
+# Exit 78 = no usable limit on this kernel: stay failed and visible instead of looping.
 Restart=on-failure
 RestartSec=10
 RestartPreventExitStatus=78

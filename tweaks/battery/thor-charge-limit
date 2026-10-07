@@ -6,8 +6,9 @@
 # Armada's LICENSE.md (original scripts GPL-2.0-or-later). NOTE: on Armada 20261006 (kernel 7.2.6) the
 # firmware ignores the threshold write; the cap needs the fork's patched qcom_battmgr.
 # thor-charge-limit: 80% battery ceiling protection for AYN Thor.
-# Sets the firmware threshold via charge_control_end_threshold and, only if the kernel
-# exposes it, clamps charge current via charge_control_limit (fork-patched kernels).
+# Sets the firmware threshold via charge_control_end_threshold (observed: the Thor firmware ignores it) and
+# clamps charge current through the battmgr current-limit control: charge_control_limit on the MgeeeeK fork,
+# or constant_charge_current on stock Armada (kernel patch 0903, Armada-authored, writing 0 stops charging).
 #
 # Exit codes: 0 = stopped cleanly, 78 = unsupported or rejected by firmware (the unit sets
 # RestartPreventExitStatus=78 so this is reported as a failed service, not retried forever).
@@ -21,6 +22,8 @@ U="$PS/qcom-battmgr-usb"
 THR="$B/charge_control_end_threshold"
 LIM="$B/charge_control_limit"
 MAX="$B/charge_control_limit_max"
+# Stock Armada exposes the same firmware control under the standard power_supply names (patch 0903).
+if [ ! -e "$LIM" ] && [ -e "$B/constant_charge_current" ]; then LIM="$B/constant_charge_current"; MAX="$B/constant_charge_current_max"; fi
 TARGET=80
 
 log(){ logger -t thor-charge-limit -- "$*" 2>/dev/null || echo "thor-charge-limit: $*" >&2; }
@@ -43,13 +46,13 @@ if [ -e "$THR" ]; then
     fi
 fi
 
-# 2. Optional charge_control_limit current clamping (only on kernels that provide it)
+# 2. Current clamp (charge_control_limit on the fork, constant_charge_current on stock Armada)
 if [ ! -e "$LIM" ]; then
     if [ "$applied_threshold" -eq 1 ]; then
         log "current-limit node absent on this kernel; holding the firmware threshold only"
         exec sleep infinity
     fi
-    log "ERROR: no usable charge limit (threshold rejected/absent and no charge_control_limit); exiting"
+    log "ERROR: no usable charge limit (threshold rejected/absent and neither charge_control_limit nor constant_charge_current exists); exiting"
     exit 78
 fi
 

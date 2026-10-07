@@ -1,16 +1,22 @@
 # Audio Architecture (Armada OS)
-> Scope: ALSA UCM2 configurations and Audio topology · Researched: 2026-10-03 · Confidence: high
+> Scope: ALSA UCM2 configs and speaker amplifiers on the Thor · Researched: 2026-10-03, re-sourced 2026-10-07 · Confidence: high where tagged. The earlier version also named a second amplifier driver (`aw88399`) and described SM8550 topology handling without a source; those lines were removed.
 
-Armada handles audio routing natively using standard Linux ALSA topologies and WirePlumber/PipeWire. Due to the complexity of Qualcomm SoCs (which use specialized DSPs and audio routers), the OS provides extensive Use Case Manager (UCM2) configurations.
+Armada routes audio through ALSA UCM2 profiles and PipeWire/WirePlumber. The Thor has its own profile set.
 
-## ALSA UCM2 Configs
-The system_files/usr/share/alsa/ucm2 directory contains device-specific mappings that tell PipeWire how to route audio streams (PCM) to the correct hardware endpoints (I2S, SoundWire, MI2S).
-- **Thor Implementation**: The AYN Thor has its own ALSA profile (AYN-Thor.conf / yn-AYNThor-.conf). This profile maps the internal Awinic AW88166 SmartPA amplifier (identified in hardware gaps) to the correct Linux audio sink.
-- **Microphone**: It also routes the internal digital mic arrays to the capture sinks.
-- **Headphone Jack**: The UCM2 profiles include Jack detection logic to automatically switch from the Awinic SmartPA to the headphone Codec when a 3.5mm plug is inserted.
+## UCM2 profiles for the Thor
+- Use-case files: `ucm2/AYN/Thor/AYN-Thor.conf` (declares the `HiFi` use case and a boot sequence of mixer defaults) and `ucm2/AYN/Thor/HiFi.conf`; the SM8550 card is matched through `ucm2/conf.d/sm8550/AYN-Thor.conf` and `ayn-AYNThor-.conf`. [src: refs/upstream/armada@574da80:system_files/usr/share/alsa/ucm2/AYN/Thor/AYN-Thor.conf#L1-L18; refs/upstream/armada@574da80:system_files/usr/share/alsa/ucm2/conf.d/sm8550/AYN-Thor.conf]
+- `HiFi.conf` defines three devices: **Speaker**, **Headphones** (using the WCD938x and LPASS RX-macro enable/disable sequences) and an internal **Mic** routed through `SWR_MIC`. The headphone device sets `JackControl "Headphone Jack"` and `JackHWMute "Speaker"`, so the speaker is muted when a plug is detected. [src: refs/upstream/armada@574da80:system_files/usr/share/alsa/ucm2/AYN/Thor/HiFi.conf#L23-L57]
+- On the Thor running Armada `20261006.9c7dd3e` PipeWire exposes `alsa_output.platform-sound.HiFi__Speaker__sink` and `...HiFi__Headphones__sink`. [observed 2026-10-07]
 
-## Audio Topology
-Certain newer SoCs (like SM8750) require explicit .m4 topology definitions to build binary .tplg files that the kernel ALSA driver loads at boot. For the Thor (SM8550), standard UCM2 configs suffice alongside the w88399 / w88166 kernel drivers.
+## Speaker amplifiers
+The Thor's device tree describes two Awinic `aw88166` amplifiers on I2C (addresses `0x34` and `0x35`, sound prefixes `SPK_L` and `SPK_R`), with tuning firmware `qcom/sm8550/ayn/thor/aw883xx_acf.bin`. [src: refs/upstream/armada@574da80:packages/kernel/dts/qcs8550-ayn-common.dtsi#L985-L1001; refs/upstream/armada@574da80:packages/kernel/dts/qcs8550-ayn-thor.dts#L462-L469]
 
-## Quirks
-Some devices (like Thor Lite) have their backends hard-fixed to S16_LE / 48000 / 2ch by the kernel (sm8250_be_hw_params_fixup()), requiring WirePlumber overrides (51-ayn-thor-lite.conf) to match this exact format, preventing resampling artifacts or silence. The Thor (SM8550) is generally more flexible.
+## Topology blobs
+Armada's `audio_topology/` directory holds AudioReach `.m4` sources only for SM8750 (`SM8750-AYN.m4`, `SM8750-KONKR.m4`) and only the generated blobs under `usr/lib/firmware/qcom/sm8750/` are shipped. There is no SM8550 topology source in that directory. [src: refs/upstream/armada@574da80:audio_topology/README.md#L1-L11]
+
+## Thor Lite quirk
+On the Thor Lite (SM8250) the kernel fixes the audio backends to S16_LE, so Armada ships a WirePlumber rule for the card `AYN Thor Lite`. [src: refs/upstream/armada@574da80:system_files/usr/share/wireplumber/wireplumber.conf.d/51-ayn-thor-lite.conf#L8-L11] See `docs/boot-kernel/devicetree-thorlite.md`.
+
+## Sources
+- [S1] refs/upstream/armada@574da80 (paths above)
+- [S2] On-device `pactl list short sinks`, 2026-10-07
