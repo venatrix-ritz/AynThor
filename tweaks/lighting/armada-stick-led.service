@@ -1,0 +1,15 @@
+[Unit]
+Description=Armada / Thor Stick RGB LED Daemon (Reactive & Ambilight)
+ConditionPathExists=/sys/class/leds/l:r1
+After=multi-user.target
+# Armada ships armada-rgb (Armada Control > RGB). Its rgb:l1..r4 are leds_group_multicolor groups of these same l:*/r:* channels (rgb:l1 = l:b4+l:g4+l:r4, read from the live devicetree 2026-10-07); two writers would fight, so never run both.
+Conflicts=armada-rgb.service
+
+[Service]
+Type=simple
+ExecStart=/var/local/bin/stick-led-color daemon
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
