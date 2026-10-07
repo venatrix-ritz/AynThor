@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later (derived from Armada scripts; see LICENSES/GPL-2.0.txt)
 # Adapted from MgeeeeK/thor-armada (Mragank Shekhar), system_files/usr/libexec/armada/thor-charge-limit,
 # commits a70010a + 7e17352. Kept: the 80%/77% hysteresis and the 1000 uA clamp. Changed here: threshold
 # accepted only if it reads back, exit 78 when rejected, env overrides, stderr logging. The fork ships
