@@ -1,5 +1,8 @@
 # Partition Layout (UFS on AYN Thor 1TB)
-> Scope: Block device layout on an internal Armada OS installation · Researched: 2026-10-03 · Confidence: high
+
+> **Audit 2026-10-07 — unverified.** This doc has no citations. The LUN and partition list may come from a live read of the Thor by the Antigravity session, but no command output or source backs it and the device has since been reset. Treat every size and name as `[UNVERIFIED]` until re-read from the device (`lsblk`, `sgdisk -p`). See `docs/reference/open-questions.md`.
+
+> Scope: Block device layout on an internal Armada OS installation · Researched: 2026-10-03 · Confidence: unverified (see banner)
 
 The AYN Thor uses a Qualcomm UFS storage topology spanning several Logical Units (LUNs) exposed as block devices `sda` through `sdf`.
 

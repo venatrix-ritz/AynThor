@@ -1,67 +1,77 @@
 #!/bin/bash
 # thor-charge-limit: 80% battery ceiling protection for AYN Thor.
-# Sets PMIC firmware threshold via charge_control_end_threshold, and if supported,
-# clamps charge current via charge_control_limit.
+# Sets the firmware threshold via charge_control_end_threshold and, only if the kernel
+# exposes it, clamps charge current via charge_control_limit (fork-patched kernels).
+#
+# Exit codes: 0 = stopped cleanly, 78 = unsupported or rejected by firmware (the unit sets
+# RestartPreventExitStatus=78 so this is reported as a failed service, not retried forever).
+#
+# NOTE: this script verifies that the threshold was ACCEPTED (readback == 80). It cannot prove
+# that charging really stops at 80% — confirm that on the device (see tweaks/README.md).
 set -euo pipefail
-B="/sys/class/power_supply/battery"
-U="/sys/class/power_supply/qcom-battmgr-usb"
+PS="${THOR_PS_BASE:-/sys/class/power_supply}"
+B="$PS/battery"
+U="$PS/qcom-battmgr-usb"
 THR="$B/charge_control_end_threshold"
 LIM="$B/charge_control_limit"
 MAX="$B/charge_control_limit_max"
+TARGET=80
 
-log(){ logger -t thor-charge-limit -- "$*"; }
+log(){ logger -t thor-charge-limit -- "$*" 2>/dev/null || echo "thor-charge-limit: $*" >&2; }
 
-for i in $(seq 1 30); do
+for _ in $(seq 1 "${THOR_WAIT_S:-30}"); do
     [ -e "$B/capacity" ] && [ -e "$U/online" ] && break
     sleep 1
 done
 
-# 1. Apply hardware firmware threshold (standard Linux power_supply attribute)
+# 1. Firmware threshold (standard Linux power_supply attribute) — accepted only if it reads back.
 applied_threshold=0
 if [ -e "$THR" ]; then
-    if echo 80 > "$THR" 2>/dev/null; then
+    echo "$TARGET" > "$THR" 2>/dev/null || true
+    readback=$(cat "$THR" 2>/dev/null || echo '?')
+    if [ "$readback" = "$TARGET" ]; then
         applied_threshold=1
-        log "firmware charge_control_end_threshold set to 80 (readback=$(cat "$THR" 2>/dev/null || echo '?'))"
+        log "firmware charge_control_end_threshold accepted (readback=$readback); real-world effect NOT verified"
+    else
+        log "ERROR: firmware did not accept charge_control_end_threshold=$TARGET (readback='$readback')"
     fi
 fi
 
-# 2. Check for optional charge_control_limit current clamping
+# 2. Optional charge_control_limit current clamping (only on kernels that provide it)
 if [ ! -e "$LIM" ]; then
     if [ "$applied_threshold" -eq 1 ]; then
-        log "Hardware charge_control_end_threshold active. Current-limit node absent on this kernel; sleeping."
-        # Sleep indefinitely while keeping the service active to maintain the state
+        log "current-limit node absent on this kernel; holding the firmware threshold only"
         exec sleep infinity
-    else
-        log "Neither charge_control_end_threshold nor charge_control_limit found; exiting."
-        exit 0
     fi
+    log "ERROR: no usable charge limit (threshold rejected/absent and no charge_control_limit); exiting"
+    exit 78
 fi
 
 maxv=$(cat "$MAX" 2>/dev/null || echo 9000000)
 state=released
 
 release(){
-    echo "$maxv" > "$LIM" 2>/dev/null && state=released && log "Released charge limit (max=$maxv) cap=$(cat $B/capacity 2>/dev/null || echo 0)"
+    echo "$maxv" > "$LIM" 2>/dev/null && state=released && log "Released charge limit (max=$maxv) cap=$(cat "$B/capacity" 2>/dev/null || echo 0)"
 }
 
 clamp(){
-    echo 1000 > "$LIM" 2>/dev/null && state=clamped && log "Clamped charge limit at 80% cap=$(cat $B/capacity 2>/dev/null || echo 0)"
+    echo 1000 > "$LIM" 2>/dev/null && state=clamped && log "Clamped charge current at ${TARGET}% cap=$(cat "$B/capacity" 2>/dev/null || echo 0)"
 }
 
 trap 'release; exit 0' TERM INT
 
 cap=$(cat "$B/capacity" 2>/dev/null || echo 0)
 on=$(cat "$U/online" 2>/dev/null || echo 0)
-if [ "$on" = 1 ] && [ "$cap" -ge 80 ]; then
+if [ "$on" = 1 ] && [ "$cap" -ge "$TARGET" ]; then
     clamp
 else
     release
 fi
 
-while sleep 30; do
+while sleep "${THOR_POLL_S:-30}"; do
     cap=$(cat "$B/capacity" 2>/dev/null) || continue
     on=$(cat "$U/online" 2>/dev/null) || continue
-    if [ "$state" = released ] && [ "$on" = 1 ] && [ "$cap" -ge 80 ]; then
+    if [ "$state" = released ] && [ "$on" = 1 ] && [ "$cap" -ge "$TARGET" ]; then
         clamp
     elif [ "$state" = clamped ] && { [ "$on" != 1 ] || [ "$cap" -le 77 ]; }; then
         release

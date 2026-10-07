@@ -6,8 +6,10 @@ After=multi-user.target
 Type=simple
 ExecStart=/var/local/bin/thor-charge-limit
 ExecStopPost=/bin/sh -c 'echo 0 > /sys/class/power_supply/battery/charge_control_end_threshold 2>/dev/null; m=$(cat /sys/class/power_supply/battery/charge_control_limit_max 2>/dev/null || echo 9000000); echo $m > /sys/class/power_supply/battery/charge_control_limit 2>/dev/null; true'
-Restart=always
+# Exit 78 = firmware rejected / unsupported kernel: stay failed and visible instead of looping.
+Restart=on-failure
 RestartSec=10
+RestartPreventExitStatus=78
 
 [Install]
 WantedBy=multi-user.target
