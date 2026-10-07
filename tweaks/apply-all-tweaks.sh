@@ -3,7 +3,11 @@
 # Usage: ./apply-all-tweaks.sh [--all | --audio | --battery | --lighting | --system | --status] [HOST]
 set -euo pipefail
 
-THOR_HOST="${2:-${THOR_HOST:-armada@<thor-ip>}}"   # override with arg 2 or $THOR_HOST
+# Host comes from arg 2, $THOR_HOST, or the git-ignored local/thor.env (template: scripts/thor.env.example).
+_ENV_FILE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/local/thor.env"
+if [ -z "${THOR_HOST:-}" ] && [ -f "$_ENV_FILE" ]; then THOR_HOST="$(sed -n 's/^THOR_HOST=//p' "$_ENV_FILE" | head -1)"; fi
+THOR_HOST="${2:-${THOR_HOST:-}}"
+[ -n "$THOR_HOST" ] || { echo "ERROR: no Thor host. Pass it as arg 2, set THOR_HOST, or fill local/thor.env (see scripts/thor.env.example)." >&2; exit 2; }
 MODE="${1:---all}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
