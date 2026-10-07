@@ -1,5 +1,7 @@
 # Artemis on AYN Thor (Armada OS)
 
+> **Audit 2026-10-07 — unverified.** This doc has no citations. The claims about the V4L2 hardware decoders (`hevc_v4l2m2m`, `h264_v4l2m2m`), native ARM64 build and Game Mode integration were not checked against the Artemis source or on the device. Treat as `[UNVERIFIED]`. See `docs/reference/open-questions.md`.
+
 ## Overview
 **Artemis** is an enhanced, high-performance client fork of Moonlight Qt specifically optimized for pairing with [Apollo](https://github.com/ClassicOldSong/Apollo) and Sunshine host servers. 
 
