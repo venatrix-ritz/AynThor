@@ -90,7 +90,7 @@ show_status() {
         echo '--- Display Sleep Sync ---'
         systemctl is-active thor-display-sync.service 2>/dev/null || echo 'Inactive/Not installed'
         echo '--- Wake-on-WLAN ---'
-        iw phy phy0 wowlan show 2>/dev/null || echo 'Not supported/enabled'
+        systemctl is-active thor-wowlan.service 2>/dev/null || echo 'Inactive/Not installed'; journalctl -t thor-wowlan -n 1 --no-pager 2>/dev/null || true
         echo '--- Failed Units ---'
         systemctl --failed --no-pager
     "
