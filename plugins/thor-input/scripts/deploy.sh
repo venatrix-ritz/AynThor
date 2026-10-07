@@ -2,7 +2,11 @@
 # Deploy Thor Input to the AYN Thor handheld device.
 set -euo pipefail
 
-THOR_HOST="${1:-armada@<thor-ip>}"
+# Host comes from arg 1, $THOR_HOST, or the git-ignored local/thor.env at the repo root (template: scripts/thor.env.example).
+_ENV_FILE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)/local/thor.env"
+if [ -z "${THOR_HOST:-}" ] && [ -f "$_ENV_FILE" ]; then THOR_HOST="$(sed -n 's/^THOR_HOST=//p' "$_ENV_FILE" | head -1)"; fi
+THOR_HOST="${1:-${THOR_HOST:-}}"
+[ -n "$THOR_HOST" ] || { echo "ERROR: no Thor host. Pass it as arg 1, set THOR_HOST, or fill local/thor.env." >&2; exit 2; }
 PLUGIN_DIR="/home/armada/homebrew/plugins/thor-input"
 APP_DIR="/var/home/armada/.local/share/thor-input"
 
