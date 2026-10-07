@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# Upstream: copied unmodified from Ga1dz1/armada, branch stick-rgb-lighting, commit 8eedf04
+#   (system_files/usr/libexec/armada/stick-led-color; author Ga1dz1, 2026-07-18).
+#   Written for the Retroid Pocket Mini V2, not the AYN Thor. Armada's LICENSE.md puts original
+#   Armada scripts under GPL-2.0-or-later; this file carries no licence header of its own.
+#   Only this comment was added here. Armada upstream already ships packages/armada-rgb with a
+#   Thor profile; running both daemons would contend for the same LEDs.
 """Get/set/apply the Retroid Pocket Mini V2 stick RGB (HTR3212, 4 zones per
 stick). Mirrors controller-type's get/set/apply + /etc/armada/*.conf pattern.
 

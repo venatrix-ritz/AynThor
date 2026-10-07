@@ -1,6 +1,6 @@
 # AYN Thor Global Device Tweaks, Fixes & Goodies (Armada OS)
 
-Curated, hardware-verified system enhancements and goodies for the **AYN Thor** running Armada OS.
+Curated system enhancements for the **AYN Thor** running Armada OS. Most were taken from community repos and have not been verified on this Thor; the Thor was reset after the 2026-10-03/04 survey and has not been re-surveyed. See the provenance note at the bottom.
 
 ---
 
@@ -18,13 +18,13 @@ Curated, hardware-verified system enhancements and goodies for the **AYN Thor** 
 - **Source:** MgeeeeK (`MgeeeeK/thor-armada` commits `a70010a` and `7e17352`).
 - **Hardware Node:** `/sys/class/power_supply/battery/charge_control_end_threshold` and `charge_control_limit`.
 - **Problem:** Continuous 100% trickle charging at elevated handheld operating temperatures (45-55°C) causes rapid battery degradation. Stock Armada OS does not expose a battery charge cap out-of-the-box (`charge_control_end_threshold = 0`).
-- **Solution:** Daemon sets `charge_control_end_threshold = 80` in the PMIC and clamps charge current to 1000 µA once capacity hits 80%, releasing only when dropped below 77% or unplugged.
+- **Behavior:** Writes `charge_control_end_threshold = 80` and treats it as applied only if it reads back 80; if the kernel also exposes `charge_control_limit` it clamps charge current to 1000 µA at 80% (release below 78% or when unplugged). Exits 78 (service shown as failed, no retry) if the firmware rejects the threshold and no clamp node exists. **Not verified that charging really stops at 80%.**
 
 ---
 
 ## 3. Reactive Analog Stick RGB Lighting Engine
 - **Path:** `tweaks/lighting/stick-led-color.py` & `armada-stick-led.service`
-- **Source:** Ga1dz1 (`Ga1dz1/armada` commit `8eedf04`).
+- **Source:** Ga1dz1 (`Ga1dz1/armada` commit `8eedf04`, branch `stick-rgb-lighting`) — written for the Retroid Pocket Mini V2, copied unmodified; not part of `--all` (see provenance note).
 - **Hardware Node:** `/sys/class/leds/l:{r,g,b}{1-4}` and `/sys/class/leds/r:{r,g,b}{1-4}` (HTR3212 controller, 4 zones per stick ring).
 - **Modes Supported:**
   - `battery`: Stick rings show battery level (Red < 20%, Yellow 20-60%, Green > 60%, pulsing while charging).
@@ -37,8 +37,8 @@ Curated, hardware-verified system enhancements and goodies for the **AYN Thor** 
 
 ## 4. System Sanitation & Desktop Dual-Screen Geometry
 - **Path:** `tweaks/system/setup-device-fixes.sh`
-- **Failed Unit Cleanup:** Masks `rpm-ostree-countme.timer`, eliminating the sole persistent failed systemd unit on Armada OS boots.
-- **KWin Output Pinning:** Verifies `kwinoutputconfig.json` retains `DSI-2` (top panel) as primary output `0,0` and `DSI-1` (bottom panel) as secondary output `490,800`.
+- **Failed Unit Cleanup:** Masks `rpm-ostree-countme.timer` and its service. It was the only failed unit on the surveyed 20260926 install (`docs/hardware/device-observed.md`, observed 2026-10-03; the Thor has since been reset).
+- **KWin layout check (read-only):** Warns if the saved `kwinoutputconfig.json` has the top panel (`DSI-2`) disabled or the bottom panel (`DSI-1`) ahead of it in priority. It never edits the file.
 
 ---
 
@@ -57,3 +57,9 @@ Deploy individually or all at once via `apply-all-tweaks.sh`:
 ./tweaks/apply-all-tweaks.sh --system
 ./tweaks/apply-all-tweaks.sh --status
 ```
+
+---
+
+## Provenance note (added 2026-10-07 by an audit)
+- `lighting/stick-led-color.py` is byte-identical to `system_files/usr/libexec/armada/stick-led-color` on **Ga1dz1's** `stick-rgb-lighting` branch (Ga1dz1/armada, a Retroid Pocket Mini V2 fork; git blob `f5852c7`; Armada's LICENSE.md puts original Armada scripts under GPL-2.0-or-later). It was not written for the Thor; credit is now in the script header and in item 3 above. Armada upstream already ships `packages/armada-rgb` with a Thor profile; running both would contend for the same LEDs.
+- The "80 % battery cap", WoWLAN and display-sync items are untested on hardware at the time of this audit; see `docs/reference/open-questions.md`.

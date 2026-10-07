@@ -1,12 +1,16 @@
 [Unit]
-Description=Thor Wake-on-Wireless (WoWLAN) Enablement
-After=network.target NetworkManager.service
+Description=Thor Wake-on-WLAN (magic packet) enablement
+After=NetworkManager.service
 Wants=NetworkManager.service
+ConditionPathExists=/usr/bin/iw
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/iw phy phy0 wowlan enable magic-packet
+ExecStart=/var/local/bin/thor-wowlan
+Restart=on-failure
+RestartSec=15
+RestartPreventExitStatus=78
 
 [Install]
 WantedBy=multi-user.target

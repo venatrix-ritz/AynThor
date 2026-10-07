@@ -1,5 +1,8 @@
 # AYN Thor — Exhaustive Component IC & Silicon Inventory
-> Scope: Component-level IC bill of materials, package types, bus topologies, power rails, and kernel drivers verified via physical device queries, devicetree bindings, and manufacturer datasheets · Researched: 2026-10-05 · Confidence: high (cross-verified across hardware sysfs, devicetrees, and manufacturer specifications)
+
+> **Audit 2026-10-07 — partly unverified.** Rows tagged `[src:]` or `[observed]` were not individually re-checked this audit; the sysfs/devicetree values and the ICs without a tag have no citation, and the device has since been reset, so `[observed]` rows cannot be re-run until the Thor is reachable again. Part-number and manufacturer entries that rest on datasheets, not on a linked source, are `[UNVERIFIED]`. See `docs/reference/open-questions.md`.
+
+> Scope: Component-level IC bill of materials, package types, bus topologies, power rails, and kernel drivers, compiled from device queries, devicetree bindings and datasheets · Researched: 2026-10-05 · Confidence: partly unverified (see banner)
 
 ## 1. Core Processing & Memory
 
