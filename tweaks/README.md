@@ -6,7 +6,7 @@ Curated system enhancements for the **AYN Thor** running Armada OS. Most were ta
 
 ## 1. Speaker Acoustic Equalization (Audio Fix)
 - **Path:** `tweaks/audio/50-thor-speaker-eq.conf`
-- **Source:** RetroPup & AlsoAmphy acoustic measurement profile (`AYN Thor Audio Fix.tar` from `ItsRetroPup/AYN-Thor-Tweaks`).
+- **Source:** adapted from AlsoAmphy's GraphicEQ string in RetroPup's JamesDSP preset (`AYN Thor Audio Fix.tar`, `ItsRetroPup/AYN-Thor-Tweaks`, no licence declared): same band centres, lighter gains, so not the original curve. See `CREDITS.md`.
 - **Problem:** The Thor internal stereo speakers suffer from box resonance in the mid-range (600 Hz - 3.8 kHz) and harsh distortion from sub-bass overload (<80 Hz).
 - **Solution:** A native PipeWire filter-chain virtual sink. It applies an 80 Hz high-pass and targeted cuts at 444 Hz (-5 dB), 700 Hz (-12 dB), 1.86 kHz (-15 dB), and 3.8 kHz (-16 dB) with a high-end lift (+3 dB at 11 kHz).
 - **Behavior:** Operates at the PipeWire layer. Automatically disables when headphones are connected.

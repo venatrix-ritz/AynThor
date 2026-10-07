@@ -32,7 +32,8 @@ Knowledge base about the **AYN Thor** (dual-screen Snapdragon 8 Gen 2 handheld) 
   - **microSD SDR104 confirmed:** Stock kernel 7.2.6 negotiates SDR104 @ 202 MHz on Samsung SDXC (89.5 MB/s sequential read) without third-party kernel patches.
   - **ABL v1.1.8 confirmed:** Both `abl_a` and `abl_b` match the approved SM8550 manifest hash.
   - **Thermals & Power:** Performance profile pins GPU to 680 MHz (~73 °C load, 48–53 °C idle).
-- **Community Tooling & Mods:**
-  - **Audio Fix:** `thor-armada-audio-fix` (JamesDSP Flatpak) installed and running to correct speaker acoustics.
-  - **Lossless Scaling:** Official `Lossless.dll` staged to Steam path and linked in `~/.config/lsfg-vk/conf.toml`.
-  - **barry-launcher:** Missing Qt6 QML runner and `xdotool` dependencies successfully resolved by extracting Fedora 44 RPMs into `~/.local/opt/barry-deps` in user space without modifying the immutable OS root.
+- **Community Tooling & Mods:** tried on the 2026-10-03/04 install (JamesDSP audio-fix flatpak, Lossless Scaling DLL for LSFG-VK, barry-launcher dependencies unpacked in user space). **None of these were present on 2026-10-07** after the device moved to `20261006.9c7dd3e`; only the PipeWire speaker EQ, Touch Master and the Antigravity-deployed tweak units were found.
+- **Re-survey 2026-10-07** ([device-observed](docs/hardware/device-observed.md)): the 80 % battery cap does **not** work on the stock kernel (firmware ignores the write); Wake-on-WLAN magic packet is supported and enabled; the Thor's stick LEDs (HTR3212) are shared with Armada's own `armada-rgb`; partition layout verified.
+
+## Credits and licences
+See [CREDITS.md](CREDITS.md): who wrote the code adapted here (Ga1dz1, MgeeeeK/Mragank Shekhar, RetroPup and AlsoAmphy), the Armada, ROCKNIX and community projects this research cites, and the open licence questions.

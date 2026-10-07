@@ -1,4 +1,9 @@
 #!/bin/bash
+# Adapted from MgeeeeK/thor-armada (Mragank Shekhar), system_files/usr/libexec/armada/thor-charge-limit,
+# commits a70010a + 7e17352. Kept: the 80%/77% hysteresis and the 1000 uA clamp. Changed here: threshold
+# accepted only if it reads back, exit 78 when rejected, env overrides, stderr logging. The fork ships
+# Armada's LICENSE.md (original scripts GPL-2.0-or-later). NOTE: on Armada 20261006 (kernel 7.2.6) the
+# firmware ignores the threshold write; the cap needs the fork's patched qcom_battmgr.
 # thor-charge-limit: 80% battery ceiling protection for AYN Thor.
 # Sets the firmware threshold via charge_control_end_threshold and, only if the kernel
 # exposes it, clamps charge current via charge_control_limit (fork-patched kernels).
