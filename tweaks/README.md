@@ -14,6 +14,7 @@ Curated system enhancements for the **AYN Thor** running Armada OS. Most were ta
 ---
 
 ## 2. 80% Battery Charge Ceiling Protection
+> **Does not work on the stock kernel (observed 2026-10-07, Armada `20261006.9c7dd3e`, kernel 7.2.6).** `charge_control_end_threshold` accepts the write but reads back `0` hours later, and there is no `charge_control_limit` node. The old script logged `set to 80 (readback=0)` and reported success. `--battery` now probes first and refuses to install; `--all` skips it. A working cap needs the patched `qcom_battmgr` from MgeeeeK/thor-armada (see `docs/android/community-tools.md`).
 - **Path:** `tweaks/battery/thor-charge-limit` & `thor-charge-limit.service`
 - **Source:** MgeeeeK (`MgeeeeK/thor-armada` commits `a70010a` and `7e17352`).
 - **Hardware Node:** `/sys/class/power_supply/battery/charge_control_end_threshold` and `charge_control_limit`.
@@ -23,6 +24,7 @@ Curated system enhancements for the **AYN Thor** running Armada OS. Most were ta
 ---
 
 ## 3. Reactive Analog Stick RGB Lighting Engine
+> **Conflicts with Armada's own RGB.** The Thor's LED chip is an HTR3212 (I2C `3-003c`), the chip this script targets. Armada's `armada-rgb` drives `rgb:l1..r4`, which are `leds_group_multicolor` groups of the same `l:*`/`r:*` channels (observed 2026-10-07), so the unit now carries `Conflicts=armada-rgb.service`. On the device `armada-rgb` is currently disabled in `rgb.json`; the clash starts when RGB is switched on in Armada Control. Not part of `--all`.
 - **Path:** `tweaks/lighting/stick-led-color.py` & `armada-stick-led.service`
 - **Source:** Ga1dz1 (`Ga1dz1/armada` commit `8eedf04`, branch `stick-rgb-lighting`) — written for the Retroid Pocket Mini V2, copied unmodified; not part of `--all` (see provenance note).
 - **Hardware Node:** `/sys/class/leds/l:{r,g,b}{1-4}` and `/sys/class/leds/r:{r,g,b}{1-4}` (HTR3212 controller, 4 zones per stick ring).
@@ -62,4 +64,4 @@ Deploy individually or all at once via `apply-all-tweaks.sh`:
 
 ## Provenance note (added 2026-10-07 by an audit)
 - `lighting/stick-led-color.py` is byte-identical to `system_files/usr/libexec/armada/stick-led-color` on **Ga1dz1's** `stick-rgb-lighting` branch (Ga1dz1/armada, a Retroid Pocket Mini V2 fork; git blob `f5852c7`; Armada's LICENSE.md puts original Armada scripts under GPL-2.0-or-later). It was not written for the Thor; credit is now in the script header and in item 3 above. Armada upstream already ships `packages/armada-rgb` with a Thor profile; running both would contend for the same LEDs.
-- The "80 % battery cap", WoWLAN and display-sync items are untested on hardware at the time of this audit; see `docs/reference/open-questions.md`.
+- Re-checked on the Thor 2026-10-07: the 80 % cap does not work (above); WoWLAN is supported and enabled on `phy0`; the display-sync daemon runs but its effect was not tested. See `docs/reference/open-questions.md`.
