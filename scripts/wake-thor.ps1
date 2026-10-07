@@ -7,10 +7,26 @@
 #>
 
 param(
-    [string]$MacAddress = "<thor-wifi-mac>",
-    [string]$BroadcastIp = "<lan-broadcast>",
+    [string]$MacAddress = "",
+    [string]$BroadcastIp = "",
     [int]$Port = 9
 )
+
+# MAC and broadcast come from -MacAddress/-BroadcastIp, THOR_MAC/THOR_BROADCAST, or the git-ignored
+# local/thor.env at the repo root (template: scripts/thor.env.example).
+$envFile = Join-Path (Split-Path $PSScriptRoot -Parent) "local\thor.env"
+$local = @{}
+if (Test-Path $envFile) {
+    Get-Content $envFile | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
+        $k, $v = $_ -split '=', 2; $local[$k.Trim()] = $v.Trim()
+    }
+}
+if (-not $MacAddress)  { $MacAddress  = if ($env:THOR_MAC) { $env:THOR_MAC } else { $local['THOR_MAC'] } }
+if (-not $BroadcastIp) { $BroadcastIp = if ($env:THOR_BROADCAST) { $env:THOR_BROADCAST } else { $local['THOR_BROADCAST'] } }
+if (-not $MacAddress -or -not $BroadcastIp) {
+    Write-Error "Set THOR_MAC and THOR_BROADCAST (env or local/thor.env, see scripts/thor.env.example)"
+    exit 1
+}
 
 $cleanMac = $MacAddress -replace "[:-]", ""
 if ($cleanMac.Length -ne 12) {
