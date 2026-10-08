@@ -1,6 +1,6 @@
 # AynThor — research repo + Thor tooling (AYN Thor + Armada OS)
 
-Source-grounded knowledge base on the AYN Thor and Armada OS, plus the small amount of code built from it: `tweaks/` (device tweak scripts, deployed over SSH) and `plugins/thor-input/` (Decky plugin "Touch Master"). Start at [README.md](README.md); rules for writing docs are in [docs/reference/CONVENTIONS.md](docs/reference/CONVENTIONS.md) (claim tags, Sources section, no unsourced causal claims, today's date absolute).
+Source-grounded knowledge base on the AYN Thor and Armada OS, plus the small amount of code built from it: `tweaks/` (device tweak scripts, deployed over SSH) and the Decky plugin "Touch Master", which is its own repo ([venatrix-ritz/thor-input](https://github.com/venatrix-ritz/thor-input), checked out at `G:\Projects\Hardware	hor-input`; `plugins/thor-input` here is a git-ignored junction to it, so commit plugin changes in that repo, not this one). Start at [README.md](README.md); rules for writing docs are in [docs/reference/CONVENTIONS.md](docs/reference/CONVENTIONS.md) (claim tags, Sources section, no unsourced causal claims, today's date absolute).
 
 - **Upstream clones** live in `refs/` (gitignored): `scripts/clone-refs.ps1` rebuilds them; SHAs in `refs/MANIFEST.md` + `scripts/refs.lock.json`. Cite as `refs/<dir>@<sha7>:path#Lnn`. Never edit `refs/`.
 - **GitHub exports** in `refs/_gh/` (`scripts/fetch-gh-meta.ps1`) are the primary source for Armada release history/issues/PRs; WebFetch output is secondary.
