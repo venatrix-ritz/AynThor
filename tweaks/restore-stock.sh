@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # restore-stock.sh: put the Thor's Armada settings back to the image defaults and remove our add-ons.
-# RUN THIS ON THE THOR (it needs sudo, which asks for the armada password):
-#     scp tweaks/restore-stock.sh "$THOR_HOST":/tmp/ && ssh -t "$THOR_HOST" 'bash /tmp/restore-stock.sh'            # dry run
-#     ssh -t "$THOR_HOST" 'bash /tmp/restore-stock.sh --apply'                                                       # do it
+# RUN THIS ON THE THOR (sudo is passwordless there):
+#     scp tweaks/restore-stock.sh "$THOR_HOST":/tmp/ && ssh "$THOR_HOST" 'bash /tmp/restore-stock.sh'                # dry run
+#     ssh "$THOR_HOST" 'bash /tmp/restore-stock.sh --apply'                                                          # do it
 # Dry run by default: prints what it would do. Nothing is deleted: every config file and leftover folder is MOVED into
 # ~/stock-reset-backup-<timestamp>/ so it can be put back. A CHANGED/KEPT report is printed and saved next to it.
 #
