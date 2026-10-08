@@ -85,7 +85,8 @@ if stash_user "$HOME/.config/pipewire/pipewire.conf.d/50-thor-speaker-eq.conf"; 
 fi
 
 echo "-- 5. Add-on: rpm-ostree-countme mask (stock state = not masked; the weekly job fails on its own)"
-if systemctl is-enabled rpm-ostree-countme.timer 2>&1 | grep -q masked; then
+st=$(systemctl is-enabled rpm-ostree-countme.timer 2>&1 || true)
+if [[ "$st" == *masked* ]]; then
     run "sudo systemctl unmask rpm-ostree-countme.timer rpm-ostree-countme.service"
     changed "rpm-ostree-countme unmasked"
 fi
