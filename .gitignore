@@ -3,3 +3,6 @@ _cache/
 __pycache__/
 *.pyc
 local/
+
+# Touch Master is its own repo (venatrix-ritz/thor-input); plugins/thor-input is a junction to G:/Projects/Hardware/thor-input
+/plugins/thor-input
