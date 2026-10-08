@@ -6,7 +6,7 @@
 - The image build copies each plugin's `plugin.json`, `package.json`, `main.py`, `py_modules`, optional `catalog.json` and `templates`, plus the built `dist/`, into `/usr/share/decky-plugins/<name>`; it also downloads the latest Decky Loader release from SteamDeckHomebrew at build time and installs an `armada-decky-sync` helper. [src: refs/upstream/armada@574da80:build_files/45-install-decky-plugins.sh#L4-L29]
 - **armada-control** imports fan-curve, power and charging-PWM handling (`fan_curves.py`, `config.py`); details in `docs/armada/armada-control-internals.md`. [src: refs/upstream/armada@574da80:decky/armada-control/main.py#L30]
 - **armada-store** is a catalogue-driven installer: `catalog.json` lists apps with a category and an install method (the first entries are Flatpaks such as RetroArch and Dolphin). [src: refs/upstream/armada@574da80:decky/armada-store/catalog.json#L1-L22]
-- On the Thor running `20261006.9c7dd3e` the Decky plugins directory held `armada-control`, `armada-store` and `thor-input` (Touch Master, from this repo's `plugins/`). [observed 2026-10-07]
+- On the Thor running `20261006.9c7dd3e` the Decky plugins directory held `armada-control`, `armada-store` and `thor-input` (Ratatoskr, then called Touch Master, from this repo's `plugins/`). [observed 2026-10-07]
 
 ## Branches and channels
 - Building the `main` branch publishes the container tag **`testing`** on channel **`preview`**; building `staging` publishes tag **`staging`** on channel **`staging`**. The tags `testing`, `preview`, `beta`, `stable` and `latest` are reserved: other branches build under their own branch name. [src: refs/upstream/armada@574da80:.github/workflows/build.yml#L64-L70]

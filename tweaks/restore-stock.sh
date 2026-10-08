@@ -8,7 +8,7 @@
 #
 # Flags: --apply   execute      --leftovers   ALSO move the game-save folders in step 7 (they are real saves: Steam Auto-Cloud files, Unity and Godot saves)
 #
-# Always kept: SSH (sshd + authorized_keys), Steam (login, library, settings), Decky and its plugins, Touch Master,
+# Always kept: SSH (sshd + authorized_keys), Steam (login, library, settings), Decky and its plugins, Ratatoskr (Touch Master),
 # Artemis, Flatpaks, Heroic, KDE/Plasma user settings, Wi-Fi connections, the ABL auto-update flag, Armada's own sudoers.
 set -uo pipefail
 
@@ -117,7 +117,7 @@ fi
 kept "SSH: sshd enabled, ~/.ssh/authorized_keys"
 kept "Steam: login, library, settings, saves (~/.local/share/Steam, ~/.steam)"
 kept "Decky Loader, armada-control, armada-store and their settings (~/homebrew)"
-kept "Touch Master: plugin, ~/.config/systemd/user/touch-master.service, ~/.config/thor-input, ~/.local/share/thor-input"
+kept "Ratatoskr (Touch Master): plugin, ~/.config/systemd/user/touch-master.service, ~/.config/thor-input, ~/.local/share/thor-input"
 kept "Artemis: ~/.local/share/artemis, ~/.config/Artemis Desktop Project, its Steam shortcut"
 kept "Flatpaks (WebCord, AudioTube, PlasmaTube) and Heroic config"
 kept "KDE/Plasma/kwin user settings in ~/.config; Wi-Fi connections; Armada's own sudoers (armada-user)"

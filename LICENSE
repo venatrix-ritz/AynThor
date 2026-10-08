@@ -11,7 +11,7 @@ Exceptions, which keep their own licences (see CREDITS.md for who wrote what):
     FSF "how to apply" appendix).
   * tweaks/audio/50-thor-speaker-eq.conf is adapted from a preset whose repository declares
     no licence; it is included with credit and will be removed or changed on request.
-  * Touch Master (the Decky plugin) is its own repository, venatrix-ritz/thor-input, with its own LICENSE (MIT).
+  * Ratatoskr, formerly Touch Master (the Decky plugin), is its own repository, venatrix-ritz/Ratatoskr, with its own LICENSE (MIT).
   * Nothing under refs/ is part of this repository (it is git-ignored); those projects keep
     their own licences.
 
