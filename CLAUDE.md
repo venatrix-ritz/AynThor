@@ -41,7 +41,7 @@ They are their own repos, git-ignored here and linked in by junction. Commit plu
 - Remote `origin` = `venatrix-ritz/AynThor` (public; credits in `CREDITS.md`).
 - Never delete branches; push all of them.
 - Branch for every change and merge with `--no-ff`. The commit author is `Ven <…@users.noreply.github.com>` (repo-local git config), and commit messages end with the Co-Authored-By line.
-- Self-merging into `main` is blocked by the safety check: open a PR and let Ven merge.
+- Open a PR and merge it yourself with `gh pr merge --merge` once the change is verified.
 - History rewrites need Ven's explicit OK and a `git bundle` backup first.
 
 ## Docs state (2026-10-07)
