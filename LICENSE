@@ -1,0 +1,38 @@
+Licence of the original material in this repository
+===================================================
+
+Everything written for this repository (the research documents under docs/, scripts/, the
+original tweaks under tweaks/, CREDITS.md and README.md) is licensed under the MIT licence below.
+
+Exceptions, which keep their own licences (see CREDITS.md for who wrote what):
+  * tweaks/lighting/stick-led-color.py and tweaks/battery/thor-charge-limit
+    come from Armada forks and stay GPL-2.0-or-later (Armada's LICENSE.md: original Armada
+    scripts are GPL-2.0-or-later). Terms: LICENSES/GPL-2.0.txt (the terms only, without the
+    FSF "how to apply" appendix).
+  * tweaks/audio/50-thor-speaker-eq.conf is adapted from a preset whose repository declares
+    no licence; it is included with credit and will be removed or changed on request.
+  * plugins/thor-input has its own LICENSE (MIT).
+  * Nothing under refs/ is part of this repository (it is git-ignored); those projects keep
+    their own licences.
+
+MIT License
+
+Copyright (c) 2026 Ven (venatrix-ritz)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

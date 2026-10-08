@@ -1,26 +1,23 @@
-# Armada OS - Build and CI Architecture
-> Scope: OS image build process and GitHub Actions workflow · Researched: 2026-10-03 · Confidence: high
+# Armada OS: Build and CI
+> Scope: how the OS image is built · Researched: 2026-10-03, re-sourced 2026-10-07 · Confidence: high, read from the Armada repo at `574da80`. Corrected: the step list (it has ten numbered scripts, not six), the disk-image tool (`bootc-image-builder`), and the "128 layers" detail, which is not in the files cited.
 
-Armada is built entirely on GitHub Actions, leveraging edora-bootc (Fedora 44) as its immutable base. The final OS image is an OCI container that devices pull natively via ostree/bootc.
+## Image
+- The `Containerfile` starts from `quay.io/fedora/fedora-bootc:44` and takes each package as a pre-built image passed in by hash: "Package images, resolved by content hash", published as `ghcr.io/<owner>/armada/pkg/<name>:<tag>` and tagged by `packages/package-hash.sh` from that package's sources. [src: refs/upstream/armada@574da80:Containerfile#L1-L19]
+- Packages (Steam bootstrap, FEX, Mesa, MangoHud, Gamescope and its session packages, KWin, kernel, InputPlumber, …) live under `packages/`, one directory each. [src: refs/upstream/armada@574da80:packages/]
 
-## CI Workflow (.github/workflows)
-The build is orchestrated through a pipeline of workflows:
-1. **Packages (packages.yml)**: Compiles custom RPMs and dependencies (Kernel, Mesa, Gamescope, InputPlumber, Decky plugins). These are cached in GitHub Packages (ghcr.io/.../armada/pkg/...) indexed by a hash of their source files.
-2. **Container Image (uild.yml)**:
-   - Pulls the pre-built packages as OCI layers.
-   - Runs Containerfile via uildah using edora-bootc as a base.
-   - Executes uild_files/build.sh sequentially (installing packages, system_files overlays, initramfs generation).
-   - Optimizes the output using chunkah (to merge/split OCI layers smartly within 128 layers for ostree).
-   - Pushes to ghcr.io/armada-os/armada.
-3. **Disk Image (uild-disk.yml)**: Uses osbuild or similar to stamp the OCI container onto a flashable disk image for new installations.
+## Workflows (`.github/workflows`)
+- **`packages.yml`:** builds each package as a Containerfile stage, one job per package so they run in parallel ("folding them into the image build would serialise 20 builds onto one machine"). [src: refs/upstream/armada@574da80:.github/workflows/packages.yml#L1-L7]
+- **`build.yml`:** builds the image; `main` → tag `testing`, `staging` → tag `staging`; a "Chunkah" step (the Containerfile pins `quay.io/coreos/chunkah`) prepares a chunked layout (`--target=chunkah`) before pushing to `ghcr.io/armada-os/armada` (`virtudude/armada` is kept as the legacy image name). [src: refs/upstream/armada@574da80:.github/workflows/build.yml#L11-L16, #L64-L70, #L133-L192; refs/upstream/armada@574da80:Containerfile#L1]
+- **`build-disk.yml`:** builds flashable disk images with `quay.io/centos-bootc/bootc-image-builder`, for the channels beta, stable, testing and staging. [src: refs/upstream/armada@574da80:.github/workflows/build-disk.yml#L10, #L42]
+- **`promote.yml`:** copies a signed `testing`/`staging` build to `beta` or `stable` (see `docs/armada/decky-plugins-and-branches.md`). Also present: `pr.yml`, `pr-disk-link.yml`, `publish-channel-disk.yml`, `label_issues.yml`. [src: refs/upstream/armada@574da80:.github/workflows/]
 
-## Build Steps
-The rootfs construction (uild_files/build.sh) follows strict ordering:
-- 10-base-packages.sh: DNF installs from upstream.
-- 20-install-kernel.sh: Drops in the SM8550 patched kernel.
-- 30-install-steam-session.sh: Injects the gamescope-session stack.
-- 40-vendor-system-files.sh: Overlays files from the repo's system_files tree.
-- 45-install-decky-plugins.sh: Places Decky plugins (like rmada-control).
-- 50-create-user.sh / 55-generate-initramfs.sh: Dracut generation.
+## Build steps (`build_files/build.sh`)
+Run in this order, each timed: `10-base-packages.sh`, `20-install-kernel.sh`, `30-install-steam-session.sh`, `40-vendor-system-files.sh`, `45-install-decky-plugins.sh`, `50-create-user.sh`, `52-configure-os-release.sh`, `55-generate-initramfs.sh`, `60-set-default-target.sh`, `70-cleanup.sh`, `80-finalize-update-state.sh`. [src: refs/upstream/armada@574da80:build_files/build.sh#L14-L24]
+- `30-install-steam-session.sh` fetches the FEX x86 RootFS and installs the Gamescope/Steam session; `40-vendor-system-files.sh` overlays `system_files/` and enables Armada's units; `45-install-decky-plugins.sh` places the two Decky plugins. [src: refs/upstream/armada@574da80:build_files/30-install-steam-session.sh#L77-L83; refs/upstream/armada@574da80:build_files/40-vendor-system-files.sh#L88-L121; refs/upstream/armada@574da80:build_files/45-install-decky-plugins.sh#L4-L18]
 
-This OCI container approach means "updating the OS" on the Thor is just pulling the latest ghcr.io image via ootc upgrade.
+## Updates on a device
+The device runs a bootc image (`ghcr.io/armada-os/armada:testing` on the surveyed Thor). [observed 2026-10-07: `bootc status`] Updates are manual: the image disables the automatic fetch timer ("Updates are manual (Steam UI / steamos-update)"; opt in with `systemctl unmask --now bootc-fetch-apply-updates.timer`). [src: refs/upstream/armada@574da80:build_files/40-vendor-system-files.sh#L123-L126]
+
+## Sources
+- [S1] refs/upstream/armada@574da80 (Containerfile, build_files/, .github/workflows/)
+- [S2] On-device `bootc status`, 2026-10-07
