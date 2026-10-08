@@ -5,7 +5,7 @@ Everything written for this repository (the research documents under docs/, scri
 original tweaks under tweaks/, CREDITS.md and README.md) is licensed under the MIT licence below.
 
 Exceptions, which keep their own licences (see CREDITS.md for who wrote what):
-  * tweaks/lighting/stick-led-color.py and tweaks/battery/thor-charge-limit
+  * tweaks/lighting/stick-led-color.py (and bin/gleipnir in the separate Gleipnir repo)
     come from Armada forks and stay GPL-2.0-or-later (Armada's LICENSE.md: original Armada
     scripts are GPL-2.0-or-later). Terms: LICENSES/GPL-2.0.txt (the terms only, without the
     FSF "how to apply" appendix).
