@@ -13,13 +13,11 @@ Curated system enhancements for the **AYN Thor** running Armada OS. Most were ta
 
 ---
 
-## 2. 80% Battery Charge Ceiling Protection
-> **Partly working, untested end to end (observed 2026-10-07, Armada `20261006.9c7dd3e`, kernel 7.2.6).** The firmware threshold path does not work: `charge_control_end_threshold` accepts a write but reads back `0`, and the old script logged `set to 80 (readback=0)` while reporting success. Armada's own kernel does carry an Armada-authored patch (`0903`) that exposes the battery manager's charge-current limit as the standard `constant_charge_current` attribute (writing `0` stops charging while the charger keeps powering the system), and the Thor has that attribute (`9000000` at 73 % charge, `4680000` at 96 %, `constant_charge_current_max` `9000000`: the firmware changes it itself, so the script remembers the value it found and restores exactly that rather than forcing the maximum). The script now clamps through it (`charge_control_limit` on the MgeeeeK fork). Not yet tried on the real battery. `--battery` only checks that a limit node exists and installs nothing otherwise; `--all` skips it. [src: refs/upstream/armada@574da80:packages/kernel/patches/0903-power-supply-qcom-battmgr-expose-the-charge-current-limit.patch]
-- **Path:** `tweaks/battery/thor-charge-limit` & `thor-charge-limit.service`
-- **Source:** MgeeeeK (`MgeeeeK/thor-armada` commits `a70010a` and `7e17352`).
-- **Hardware Node:** `/sys/class/power_supply/battery/charge_control_end_threshold` and `charge_control_limit`.
-- **Problem:** Continuous 100% trickle charging at elevated handheld operating temperatures (45-55°C) causes rapid battery degradation. Stock Armada OS does not expose a battery charge cap out-of-the-box (`charge_control_end_threshold = 0`).
-- **Behavior:** Writes `charge_control_end_threshold = 80` and treats it as applied only if it reads back 80; if the kernel also exposes `charge_control_limit` it clamps charge current to 1000 µA at 80% (release below 78% or when unplugged). Exits 78 (service shown as failed, no retry) if the firmware rejects the threshold and no clamp node exists. **Not verified that charging really stops at 80%.**
+## 2. 80% Battery Charge Ceiling: now the Gleipnir plugin
+Moved out of this folder on 2026-10-08. It is its own Decky plugin and repo, **Gleipnir** ([venatrix-ritz/Gleipnir](https://github.com/venatrix-ritz/Gleipnir), checked out at the git-ignored `plugins/gleipnir`), because it needs a root daemon, a UI and a safety test of its own.
+- **Why a test comes first:** the firmware ignores the standard `charge_control_end_threshold` (reads back `0`), and AYN's Android 80 % node (`/sys/class/qcom-battery/limit_capacity_charge`) does not exist on Armada [observed 2026-10-08]. Armada's own kernel patch `0903` exposes the charge current limit as `constant_charge_current` (writing `0` is documented to stop charging while the charger powers the system), but nobody has shown the Thor's firmware obeys it. Gleipnir therefore stays watch-only until its built-in test (charging must stop while clamped *and* resume after release) passes on the running kernel. [src: refs/upstream/armada@574da80:packages/kernel/patches/0903-power-supply-qcom-battmgr-expose-the-charge-current-limit.patch]
+- **Source:** adapted from MgeeeeK's `thor-charge-limit` (`MgeeeeK/thor-armada` commits `a70010a`, `7e17352`); see `CREDITS.md`.
+- **Install:** `plugins/gleipnir/scripts/deploy.sh`, then Steam menu, Decky, Gleipnir, Install daemon, Run test.
 
 ---
 
@@ -54,7 +52,7 @@ Deploy individually or all at once via `apply-all-tweaks.sh`:
 
 # Or selectively:
 ./tweaks/apply-all-tweaks.sh --audio
-./tweaks/apply-all-tweaks.sh --battery
+./tweaks/apply-all-tweaks.sh --wowlan     # Wake-on-WLAN only
 ./tweaks/apply-all-tweaks.sh --lighting
 ./tweaks/apply-all-tweaks.sh --system
 ./tweaks/apply-all-tweaks.sh --status

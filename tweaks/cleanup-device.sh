@@ -33,7 +33,7 @@ set -u
 run() { if [ "$APPLY" = 1 ]; then echo "+ $*"; eval "$*"; else echo "[dry-run] $*"; fi; }
 sudo -n true 2>/dev/null || { echo "ERROR: passwordless sudo is not available on the Thor."; exit 1; }
 
-echo "-- 1. thor-charge-limit (deployed old version only checks charge_control_limit, which this kernel lacks, so it does nothing; reinstall the new one with apply-all-tweaks.sh --battery if you want the cap)"
+echo "-- 1. thor-charge-limit (deployed old version only checks charge_control_limit, which this kernel lacks, so it does nothing; the 80% cap is now the Gleipnir plugin, see plugins/gleipnir)"
 if [ -e /etc/systemd/system/thor-charge-limit.service ] || [ -e /var/local/bin/thor-charge-limit ]; then
     run "sudo systemctl disable --now thor-charge-limit.service 2>/dev/null || true"
     run "sudo rm -f /etc/systemd/system/thor-charge-limit.service /var/local/bin/thor-charge-limit"

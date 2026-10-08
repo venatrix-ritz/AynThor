@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # apply-all-tweaks.sh: Deploy curated AYN Thor tweaks & goodies to the device.
-# Usage: ./apply-all-tweaks.sh [--all | --audio | --battery | --lighting | --system | --status] [HOST]
+# Usage: ./apply-all-tweaks.sh [--all | --audio | --lighting | --system | --wowlan | --status] [HOST]
 set -euo pipefail
 
 # Host comes from arg 2, $THOR_HOST, or the git-ignored local/thor.env (template: scripts/thor.env.example).
@@ -24,41 +24,6 @@ deploy_audio() {
     ssh "${THOR_HOST}" "systemctl --user restart pipewire.service pipewire-pulse.service"
     echo "==> Speaker EQ installed and PipeWire reloaded."
 }
-deploy_battery() {
-    echo "==> Checking which battery control this kernel offers..."
-    # Observed 2026-10-07 (Armada 20261006, kernel 7.2.6): charge_control_end_threshold accepts 80 but reads back 0.
-    # Armada patch 0903 exposes the charge-current limit as constant_charge_current; the script clamps through it.
-    # Read-only here: nothing is written during the check.
-    probe=$(ssh "${THOR_HOST}" 'bash -s' <<'PROBE'
-B=/sys/class/power_supply/battery
-if [ -e "$B/charge_control_limit" ]; then echo "limit:charge_control_limit"
-elif [ -e "$B/constant_charge_current" ]; then echo "limit:constant_charge_current"
-elif [ -e "$B/charge_control_end_threshold" ]; then echo "threshold-only"
-else echo "none"; fi
-PROBE
-)
-    case "$probe" in
-        limit:*) echo "==> Current-limit node found: ${probe#limit:} (effect on real charging is still untested on this Thor)." ;;
-        *)
-            if [ "${THOR_FORCE_BATTERY:-0}" != "1" ]; then
-                echo "ERROR: no usable charge-current limit on this kernel (probe: '${probe}'); the firmware ignores the end threshold. Not installing. Set THOR_FORCE_BATTERY=1 to install anyway." >&2
-                return 3
-            fi ;;
-    esac
-    echo "==> Installing Thor 80% Battery Charge Ceiling Protection..."
-    scp "${SCRIPT_DIR}/battery/thor-charge-limit" "${THOR_HOST}:/tmp/thor-charge-limit"
-    scp "${SCRIPT_DIR}/battery/thor-charge-limit.service" "${THOR_HOST}:/tmp/thor-charge-limit.service"
-    ssh "${THOR_HOST}" "
-        sudo mkdir -p /var/local/bin
-        sudo mv /tmp/thor-charge-limit /var/local/bin/thor-charge-limit
-        sudo chmod +x /var/local/bin/thor-charge-limit
-        sudo mv /tmp/thor-charge-limit.service /etc/systemd/system/thor-charge-limit.service
-        sudo systemctl daemon-reload
-        sudo systemctl enable --now thor-charge-limit.service
-    "
-    echo "==> Battery charge limit service active."
-}
-
 deploy_lighting() {
     echo "==> Installing Reactive Stick RGB LED Controller..."
     scp "${SCRIPT_DIR}/lighting/stick-led-color.py" "${THOR_HOST}:/tmp/stick-led-color"
@@ -72,6 +37,25 @@ deploy_lighting() {
         sudo systemctl enable --now armada-stick-led.service
     "
     echo "==> Stick RGB LED controller active."
+}
+
+deploy_wowlan() {
+    echo "==> Installing Wake-on-WLAN only (no display sync, no countme mask)..."
+    scp "${SCRIPT_DIR}/system/thor-wowlan" "${THOR_HOST}:/tmp/thor-wowlan"
+    scp "${SCRIPT_DIR}/system/thor-wowlan.service" "${THOR_HOST}:/tmp/thor-wowlan.service"
+    scp "${SCRIPT_DIR}/system/90-wowlan.conf" "${THOR_HOST}:/tmp/90-wowlan.conf"
+    ssh "${THOR_HOST}" "
+        sudo mkdir -p /var/local/bin
+        sudo mv /tmp/thor-wowlan /var/local/bin/thor-wowlan
+        sudo chmod +x /var/local/bin/thor-wowlan
+        sudo mv /tmp/thor-wowlan.service /etc/systemd/system/thor-wowlan.service
+        sudo mv /tmp/90-wowlan.conf /etc/NetworkManager/conf.d/90-wowlan.conf
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now thor-wowlan.service
+        sudo systemctl reload NetworkManager
+        journalctl -t thor-wowlan -n 1 --no-pager || true
+    "
+    echo "==> Wake-on-WLAN installed."
 }
 
 deploy_system() {
@@ -106,8 +90,8 @@ show_status() {
     ssh "${THOR_HOST}" "
         echo '--- Audio EQ ---'
         ls -l ~/.config/pipewire/pipewire.conf.d/50-thor-speaker-eq.conf 2>/dev/null || echo 'Not installed'
-        echo '--- Battery Protection ---'
-        systemctl is-active thor-charge-limit.service 2>/dev/null || echo 'Inactive/Not installed'
+        echo '--- Gleipnir (battery ceiling plugin) ---'
+        systemctl is-active gleipnir.service 2>/dev/null || echo 'Inactive/Not installed'; sudo -n /var/local/bin/gleipnir --status 2>/dev/null | head -4 || true
         echo '--- Stick Lighting ---'
         systemctl is-active armada-stick-led.service 2>/dev/null || echo 'Inactive/Not installed'
         echo '--- Display Sleep Sync ---'
@@ -124,7 +108,8 @@ case "$MODE" in
         deploy_audio
         ;;
     --battery)
-        deploy_battery
+        echo "The 80% battery ceiling is now Gleipnir, its own Decky plugin (repo venatrix-ritz/Gleipnir, checked out at plugins/gleipnir). Install it with: plugins/gleipnir/scripts/deploy.sh" >&2
+        exit 1
         ;;
     --lighting)
         deploy_lighting
@@ -132,18 +117,21 @@ case "$MODE" in
     --system)
         deploy_system
         ;;
+    --wowlan)
+        deploy_wowlan
+        ;;
     --status)
         show_status
         ;;
     --all)
         deploy_audio
-        echo "==> NOTE: --all skips the 80% battery cap: it clamps real charging current and its effect is untested on this Thor. Install it deliberately with --battery."
+        echo "==> NOTE: the 80% battery ceiling is not part of --all. It is the Gleipnir plugin (plugins/gleipnir/scripts/deploy.sh); it stays watch-only until its on-device test passes."
         deploy_system
         echo "==> NOTE: --all skips the stick-RGB daemon: Armada already ships armada-rgb (Armada Control > RGB) for the Thor and two writers would fight over the LEDs. Use --lighting explicitly if you want it."
         show_status
         ;;
     *)
-        echo "Usage: $0 [--all | --audio | --battery | --lighting | --system | --status] [HOST]"
+        echo "Usage: $0 [--all | --audio | --lighting | --system | --wowlan | --status] [HOST]"
         exit 1
         ;;
 esac
