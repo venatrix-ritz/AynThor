@@ -4,5 +4,10 @@ __pycache__/
 *.pyc
 local/
 
-# Touch Master is its own repo (venatrix-ritz/thor-input); plugins/thor-input is a junction to G:/Projects/Hardware/thor-input
+# The Decky plugins are their own repos, checked out beside this one and linked in by junction:
+#   plugins/ratatoskr -> G:/Projects/Hardware/Ratatoskr   (venatrix-ritz/Ratatoskr, formerly Touch Master / thor-input)
+#   plugins/gleipnir  -> G:/Projects/Hardware/Gleipnir    (venatrix-ritz/Gleipnir, the 80% battery ceiling)
+# /plugins/thor-input is the old tracked path that older branches still carry; never create a junction there.
+/plugins/ratatoskr
+/plugins/gleipnir
 /plugins/thor-input
