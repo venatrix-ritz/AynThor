@@ -63,3 +63,6 @@ Deploy individually or all at once via `apply-all-tweaks.sh`:
 ## Provenance note (added 2026-10-07 by an audit)
 - `lighting/stick-led-color.py` is byte-identical to `system_files/usr/libexec/armada/stick-led-color` on **Ga1dz1's** `stick-rgb-lighting` branch (Ga1dz1/armada, a Retroid Pocket Mini V2 fork; git blob `f5852c7`; Armada's LICENSE.md puts original Armada scripts under GPL-2.0-or-later). It was not written for the Thor; credit is now in the script header and in item 3 above. Armada upstream already ships `packages/armada-rgb` with a Thor profile; running both would contend for the same LEDs.
 - Re-checked on the Thor 2026-10-07: the firmware 80 % threshold does not work, the current-limit route (above) is untested; WoWLAN is supported and enabled on `phy0`; the display-sync daemon runs but its effect was not tested. See `docs/reference/open-questions.md`.
+
+## battery-monitor.py
+Read-only logger for the battery and power state (`tweaks/battery-monitor.py`, run it on the Thor with `python3`). One JSON line per sample in `~/battery-logs/`: a full snapshot every 5 s (power supplies, hwmon, thermal, CPU, devfreq, backlight, USB-C, Wi-Fi, top processes, Gleipnir) and a 1 s battery-only line. It writes nothing to sysfs and is not part of `apply-all-tweaks.sh`.
