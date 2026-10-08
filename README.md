@@ -32,7 +32,7 @@ Knowledge base about the **AYN Thor** (dual-screen Snapdragon 8 Gen 2 handheld) 
   - **microSD SDR104 confirmed:** Stock kernel 7.2.6 negotiates SDR104 @ 202 MHz on Samsung SDXC (89.5 MB/s sequential read) without third-party kernel patches.
   - **ABL v1.1.8 confirmed:** Both `abl_a` and `abl_b` match the approved SM8550 manifest hash.
   - **Thermals & Power:** Performance profile pins GPU to 680 MHz (~73 °C load, 48–53 °C idle).
-- **Community Tooling & Mods:** tried on the 2026-10-03/04 install (JamesDSP audio-fix flatpak, Lossless Scaling DLL for LSFG-VK, barry-launcher dependencies unpacked in user space). **None of these were present on 2026-10-07** after the device moved to `20261006.9c7dd3e`; only the PipeWire speaker EQ, Touch Master and the Antigravity-deployed tweak units were found.
+- **Community Tooling & Mods:** tried on the 2026-10-03/04 install (JamesDSP audio-fix flatpak, Lossless Scaling DLL for LSFG-VK, barry-launcher dependencies unpacked in user space). **None of these were present on 2026-10-07** after the device moved to `20261006.9c7dd3e`; only the PipeWire speaker EQ, Touch Master (now Ratatoskr) and the Antigravity-deployed tweak units were found.
 - **Re-survey 2026-10-07** ([device-observed](docs/hardware/device-observed.md)): the 80 % battery cap does **not** work on the stock kernel (firmware ignores the write); Wake-on-WLAN magic packet is supported and enabled; the Thor's stick LEDs (HTR3212) are shared with Armada's own `armada-rgb`; partition layout verified.
 
 ## Credits and licences
