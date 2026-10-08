@@ -56,15 +56,28 @@ if [ ! -e "$LIM" ]; then
     exit 78
 fi
 
+# The firmware changes this value itself (observed on the Thor: 9000000 at 73 %, 4680000 at 96 %), so the
+# script never forces the maximum. It remembers what it found before clamping and puts exactly that back.
 maxv=$(cat "$MAX" 2>/dev/null || echo 9000000)
+CLAMP_UA=1000
 state=released
+saved=""
+
+# A value at or below the clamp means an earlier run left it clamped (crash/kill): treat it as ours.
+cur=$(cat "$LIM" 2>/dev/null || echo 0)
+if [ "$cur" -le "$CLAMP_UA" ] 2>/dev/null; then state=clamped; fi
 
 release(){
-    echo "$maxv" > "$LIM" 2>/dev/null && state=released && log "Released charge limit (max=$maxv) cap=$(cat "$B/capacity" 2>/dev/null || echo 0)"
+    [ "$state" = clamped ] || return 0
+    local target="${saved:-$maxv}"
+    echo "$target" > "$LIM" 2>/dev/null && state=released && saved="" && log "Released charge limit (restored $target) cap=$(cat "$B/capacity" 2>/dev/null || echo 0)"
 }
 
 clamp(){
-    echo 1000 > "$LIM" 2>/dev/null && state=clamped && log "Clamped charge current at ${TARGET}% cap=$(cat "$B/capacity" 2>/dev/null || echo 0)"
+    local c
+    c=$(cat "$LIM" 2>/dev/null || echo 0)
+    if [ "$c" -gt "$CLAMP_UA" ] 2>/dev/null; then saved="$c"; fi
+    echo "$CLAMP_UA" > "$LIM" 2>/dev/null && state=clamped && log "Clamped charge current at ${TARGET}% (was ${saved:-unknown}) cap=$(cat "$B/capacity" 2>/dev/null || echo 0)"
 }
 
 trap 'release; exit 0' TERM INT
@@ -72,7 +85,7 @@ trap 'release; exit 0' TERM INT
 cap=$(cat "$B/capacity" 2>/dev/null || echo 0)
 on=$(cat "$U/online" 2>/dev/null || echo 0)
 if [ "$on" = 1 ] && [ "$cap" -ge "$TARGET" ]; then
-    clamp
+    [ "$state" = clamped ] || clamp
 else
     release
 fi
