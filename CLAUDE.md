@@ -15,7 +15,7 @@ They are their own repos, git-ignored here and linked in by junction. Commit plu
 | Plugin | What it is | Repo | Local path |
 |---|---|---|---|
 | **Ratatoskr** (formerly Touch Master) | bottom-screen trackpad/keyboard driver | [venatrix-ritz/Ratatoskr](https://github.com/venatrix-ritz/Ratatoskr) | `G:\Projects\Hardware\Ratatoskr` as `plugins/ratatoskr` |
-| **Gleipnir** | the 80 % battery ceiling; watch-only until its on-device test passes | [venatrix-ritz/Gleipnir](https://github.com/venatrix-ritz/Gleipnir) | `G:\Projects\Hardware\Gleipnir` as `plugins/gleipnir` |
+| **Gleipnir** | the 80 % battery ceiling; verified on one Thor 2026-10-08, watch-only on any kernel until its test passes | [venatrix-ritz/Gleipnir](https://github.com/venatrix-ritz/Gleipnir) | `G:\Projects\Hardware\Gleipnir` as `plugins/gleipnir` |
 
 **Junction hazard:** never check out a branch that still tracks `plugins/thor-input` while a junction sits in `plugins/`. Git would overwrite the real repo through it. That happened once on 2026-10-07; nothing was lost because the work was committed.
 
