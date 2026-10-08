@@ -4,7 +4,7 @@
 ## Summary
 - Export (2026-10-02): 342 issues, 258 PRs total. Thor-related: **53 issues** (27 open) and **23 PRs**. Issues with label `device: ayn-thor`: 28. [src: refs/_gh/issues.json] [src: refs/_gh/prs.json]
 - Labels in use: blocked, bug, dependencies, device: all, device: ayaneo-pocket-dmg, device: ayaneo-pocket-ds, device: ayaneo-pocket-s, device: ayn-odin-2, device: ayn-odin-2-portal, device: ayn-odin-3, device: ayn-thor, device: generic, device: konkr-pocket-fit, device: retroid-pocket-5, device: retroid-pocket-6, device: unknown, documentation, enhancement, for-triage, github_actions, hardware: dual-screen, new-device, soc: SM8550. [src: refs/_gh/issues.json]
-- Match rule: regex thor|thor-?lite on title+body (+headRefName for PRs) or a label containing "thor". Many hits are multi-device reports (Odin 3/Odin 2) that merely mention Thor.
+- Match rule: regex bthorb|thor-?lite on title+body (+headRefName for PRs) or a label containing "thor". Many hits are multi-device reports (Odin 3/Odin 2) that merely mention Thor.
 
 ## Issues
 | # | state | opened | closed | labels | title |

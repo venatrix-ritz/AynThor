@@ -1,18 +1,22 @@
-# Community Guides (Armada OS)
-> Scope: Community tools, modifications, and guides for Armada OS · Researched: 2026-10-04 · Confidence: high
+# Community Tools and Guides (Armada OS)
+> Scope: community add-ons seen for the Thor on Armada, with what their own READMEs say · Researched: 2026-10-04, re-sourced 2026-10-07 · Confidence: medium. Removed from the earlier version: a "JamesDSP audio-fix script suite" with named files and a claim that CocoonFE runs inside Waydroid; neither appears in any cloned source.
 
-The Armada OS community has built several tools to enhance the dual-screen and handheld experience. Due to Armada's immutable nature, most tools run in userspace or integrate via Decky plugins.
+## Bottom-screen launchers
+- **Barry Launcher** ([project-barry/barry-launcher](https://github.com/project-barry/barry-launcher), GPL-2.0): a home screen for the Thor's bottom screen while SteamOS-style Game Mode runs on the top; tiles, an on-screen keyboard, a trackpad/keyboard app, and a performance dashboard shown by a short press of the AYN button (hold AYN to return home). [src: refs/community/barry-launcher@13ab555:README.md#L10-L41]
+  - It needs Game Mode's gamescope started with `--lease-connector <bottom connector>` and `--drm-lease-client`; the README says Armada and pb-os Thor images do this. [src: refs/community/barry-launcher@13ab555:README.md#L83-L86]
+  - Install adds a udev rule (so your user can read the AYN button) and, on the Thor, an InputPlumber override so InputPlumber stops handling the AYN button; reboot afterwards. [src: refs/community/barry-launcher@13ab555:README.md#L105-L108]
+  - On Armada it turns off Armada's own bottom-screen session (Plasma Mobile, `armada-bottom-screen.service`) because only one session can hold the bottom screen. [src: refs/community/barry-launcher@13ab555:README.md#L158-L159]
+  - Not installed on the surveyed Thor on 2026-10-07. [observed 2026-10-07: docs/hardware/device-observed.md]
+- **Cocoon** ([inssekt/CocoonFE](https://github.com/inssekt/CocoonFE), site cocoon-shell.com): listed as a dual-screen launcher in a community Thor config list, i.e. an Android-side launcher. [src: refs/thor-android/ayn-thor-config@1961dee:README.md#L50]
 
-## Dual-Screen Launchers
-Because standard SteamOS UI only drives the primary screen (DSI-1), the bottom screen requires external compositors or launchers.
-- **arry-launcher**: A lightweight systemd user service that spawns a secondary Wayland compositor on the bottom screen using a DRM lease (--drm-lease-client). It displays battery stats, time, and allows basic touch interactions. It intercepts the physical AYN button using an InputPlumber override to toggle its visibility.
-- **CocoonFE**: An Android frontend (inssekt/CocoonFE) that is often run inside Waydroid (guestos) to provide a "Now Playing" or media-center interface on the secondary screen.
+## Audio
+- **ThorTune** (androosio/thortune, GPL-2.0) is an Android app that drives JamesDSP with "Joey's Retro Handhelds tuning made for the Thor's speakers"; it is not an Armada tool. [src: refs/thor-android/thortune@4b80497:README.md#L13, #L32-L36]
+- **Speaker EQ on Armada:** this repo's `tweaks/audio/50-thor-speaker-eq.conf` (PipeWire filter-chain, adapted from RetroPup/AlsoAmphy's JamesDSP preset); see `CREDITS.md`.
 
-## Audio and DSP Fixes
-- **JamesDSP Audio Fix**: A community script suite (udiofix-setup.sh, udiofix-jamesdsp-auto.service) exists to automatically configure JamesDSP with specific EQ presets to improve the sound profile of the internal Awinic AW88166 speakers on Armada.
+## How add-ons are installed on this immutable image
+What the surveyed Thor actually has: a user systemd unit (`~/.config/systemd/user/touch-master.service`), Decky plugins in `~/homebrew/plugins` (`armada-control`, `armada-store`, `thor-input`), Flatpaks (e.g. WebCord) and system units added under `/etc/systemd/system` with their binaries in `/var/local/bin` (`/usr/local/bin` exists but is empty and root-owned; why the tweaks use `/var/local/bin` instead was not tested). [observed 2026-10-07: docs/hardware/device-observed.md]
 
-## Installing Community Tools
-To install system-level community tools on an immutable OS like Armada, users typically install them as:
-1. **Systemd User Services**: Placed in ~/.config/systemd/user/ and managed without sudo.
-2. **Decky Plugins**: Dropped into ~/homebrew/plugins/.
-3. **Flatpaks**: Installed system-wide or per-user via latpak.
+## Sources
+- [S1] refs/community/barry-launcher@13ab555:README.md
+- [S2] refs/thor-android/ayn-thor-config@1961dee:README.md; refs/thor-android/thortune@4b80497:README.md
+- [S3] On-device survey 2026-10-07

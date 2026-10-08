@@ -1,20 +1,26 @@
 # Installer and Disk Layout (Armada OS)
-> Scope: The internal installation mechanism and disk layout strategy · Researched: 2026-10-03 · Confidence: high
+> Scope: the internal installer's partition plan, read from its source · Researched: 2026-10-03, re-sourced 2026-10-07 · Confidence: high, from `armada-installer` at `574da80`. Corrected: Android's size is chosen by the user (8 GiB minimum), not "defaulted to 50 GB", and the old text overstated the userdata "secure wipe".
 
-Armada is installed via the `armada-installer` Python script. When running from a live USB (or SD card), the installer interrogates the primary UFS storage (`sda`) and calculates a partition plan.
+## What the installer is
+`armada-installer` is a Python script (`system_files/usr/libexec/armada/armada-installer`, 840 lines) with `detect` and `install` commands, a console path and a GTK path; `--device` defaults to `$ARMADA_INTERNAL_DEVICE`. It refuses to run on the boot disk and takes an exclusive lock. [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L805-L815; refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L646-L650]
 
-## Partitioning Strategy
-The installer targets `sda`, the primary LUN, which houses Android's `userdata` partition.
-1. **Locate Userdata:** The installer finds the `userdata` partition (typically `sda17`).
-2. **Calculate Free Space:** The maximum size for Android is calculated based on the block device capacity minus required Linux partitions (`ESP`, `BOOT`, `ROOT`).
-3. **Shrink and Wipe Userdata:** On a fresh internal installation, the installer shrinks the size of `userdata` in the partition table (defaulting to 50 GB) and securely wipes its header. **This wipes all Android data on the device.**
-4. **Append Linux Partitions:** Three partitions are created in the remaining space:
-   - `ARMADA` (512 MB): EFI System Partition (`mkfs.vfat`)
-   - `ARMADA_BOOT` (1 GB): Linux boot partition (`mkfs.ext4`)
-   - `ARMADA_ROOT` (remainder of disk): Ostree BTRFS root (`mkfs.btrfs -L root`)
+## Fresh install (no Armada partitions yet)
+1. It reads the GPT with `sfdisk --json`, requires a GPT with 512- or 4096-byte sectors and exactly one `userdata` partition; anything after `userdata` is the "tail". [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L126-L128, #L161-L166]
+2. Constants: ESP 512 MiB, boot 1 GiB, root minimum 32 GiB, Android minimum 8 GiB, plus 64 MiB reserve. The largest Android size offered is the space left after those. [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L25-L28, #L175-L180]
+3. The new Android (`userdata`) size is **chosen by the user**: `--userdata-gib` (required for an unattended run), an interactive prompt, or a slider in the GUI. There is no default of 50 GB in the code. [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L652-L660, #L695-L699] (The Thor surveyed has `userdata` at 50.0 GiB, i.e. that was the size chosen at install. [observed 2026-10-07: docs/boot-kernel/partition-layout.md])
+4. It shrinks `userdata` in the table and appends three partitions, preferring the next three numbers: `ARMADA` (EFI type, 512 MiB), `ARMADA_BOOT` (Linux, 1 GiB), `ARMADA_ROOT` (Linux, the rest). [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L233-L242]
+5. Filesystems: `mkfs.btrfs -L root` with subvolumes `root`, `var`, `home`; `mkfs.vfat -F 16 -n ARMADA` for the ESP; `mkfs.ext4 -L boot` for the boot partition; an ostree sysroot is initialised on the root. [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L533-L544]
+6. Android data is destroyed by zeroing only the **first 8 MiB** of the shrunk `userdata` (`dd … bs=1M count=8`), not by a full secure wipe; the confirmation text says "All Android user data will be erased". [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L523-L525, #L248-L249]
 
-## Replacement (Re-install)
-If Armada partitions already exist (e.g. `ARMADA`, `ARMADA_BOOT`, `ARMADA_ROOT`), the installer enters "replace" mode. It will wipe these three partitions and reinstall the running image onto them, while leaving the `userdata` partition untouched (preserving Android data across an Armada reinstall).
+## Re-install ("replace" mode)
+If partitions already exist after `userdata`, the plan is `replace`: it erases all partitions after `userdata`, recreates the three Armada partitions and installs the running image; `userdata` and earlier partitions are untouched (no zeroing step in this mode). `--userdata-gib` is rejected in this mode. [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L216-L220, #L245-L247, #L523]
 
 ## Removal
-As documented in `restore-android.md`, removing the CFW requires booting into the ABL menu and selecting "UNINSTALL CFW & EXPAND USERDATA". This tells the ABL to delete the Linux partitions, expand the `userdata` partition back to its original size, and trigger an Android factory reset.
+The installer's epilog says "To uninstall, select UNINSTALL CFW in ABL." [src: refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer#L806] Armada's docs: ABL menu → UNINSTALL CFW → "UNINSTALL CFW & EXPAND USERDATA". [src: refs/upstream/armadaos.dev@26dcfc3:docs/getting-started/uninstalling-and-restoring-android.md#L9-L13] Whether the ABL also triggers an Android factory reset is not stated in these sources.
+
+## Resulting layout on the Thor
+See `docs/boot-kernel/partition-layout.md` (sda18–sda20, observed).
+
+## Sources
+- [S1] refs/upstream/armada@574da80:system_files/usr/libexec/armada/armada-installer
+- [S2] refs/upstream/armadaos.dev@26dcfc3:docs/getting-started/uninstalling-and-restoring-android.md
