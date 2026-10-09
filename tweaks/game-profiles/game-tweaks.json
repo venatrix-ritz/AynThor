@@ -1,0 +1,346 @@
+{
+  "games": {
+    "32370": {
+      "fexProfile": "default"
+    },
+    "208580": {
+      "fexProfile": "default"
+    },
+    "212680": {
+      "fexProfile": "default"
+    },
+    "250900": {
+      "fexProfile": "default"
+    },
+    "264710": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "333640": {
+      "fexProfile": "default"
+    },
+    "381020": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "427410": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "599140": {
+      "fexProfile": "default"
+    },
+    "606150": {
+      "fexProfile": "default"
+    },
+    "646570": {
+      "fexProfile": "default"
+    },
+    "686060": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "753420": {
+      "fexProfile": "default"
+    },
+    "753640": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "846030": {
+      "fexProfile": "default"
+    },
+    "921570": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "979690": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "1022980": {
+      "fexProfile": "default"
+    },
+    "1043810": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "1176710": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "1292690": {
+      "fexProfile": "default"
+    },
+    "1313140": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "1536620": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "1782120": {
+      "fexProfile": "default"
+    },
+    "1971650": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "1983260": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "2015270": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2026820": {
+      "fexProfile": "default"
+    },
+    "2059170": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2062430": {
+      "fexProfile": "default"
+    },
+    "2163330": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2218750": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2321470": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2350790": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2436940": {
+      "fexProfile": "default"
+    },
+    "2499520": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "2510960": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2820820": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2832310": {
+      "fexProfile": "default"
+    },
+    "2845630": {
+      "fexProfile": "default"
+    },
+    "2868840": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "2934220": {
+      "fexProfile": "default"
+    },
+    "3039910": {
+      "fexProfile": "default"
+    },
+    "3091140": {
+      "fexProfile": "default"
+    },
+    "3164500": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "3167020": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "3199360": {
+      "fexProfile": "default"
+    },
+    "3232380": {
+      "fexProfile": "default"
+    },
+    "3314790": {
+      "fexProfile": "default"
+    },
+    "3405340": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "3467710": {
+      "fexProfile": "default"
+    },
+    "3494210": {
+      "fexProfile": "default"
+    },
+    "3526710": {
+      "fexProfile": "default"
+    },
+    "3542380": {
+      "fexProfile": "default"
+    },
+    "3596700": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "3839300": {
+      "fexProfile": "default"
+    },
+    "3934270": {
+      "fexProfile": "default"
+    },
+    "3946950": {
+      "fexProfile": "default"
+    },
+    "3985950": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "4075620": {
+      "fexProfile": "default"
+    },
+    "4078430": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "40",
+        "VKD3D_FRAME_RATE": "40"
+      }
+    },
+    "4197610": {
+      "fexProfile": "default",
+      "cores": "big",
+      "env": {
+        "DXVK_FRAME_RATE": "60",
+        "VKD3D_FRAME_RATE": "60"
+      }
+    },
+    "4421010": {
+      "fexProfile": "default"
+    },
+    "4601120": {
+      "fexProfile": "default"
+    }
+  }
+}
