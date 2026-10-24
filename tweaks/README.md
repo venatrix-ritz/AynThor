@@ -66,3 +66,6 @@ Deploy individually or all at once via `apply-all-tweaks.sh`:
 
 ## battery-monitor.py
 Read-only logger for the battery and power state (`tweaks/battery-monitor.py`, run it on the Thor with `python3`). One JSON line per sample in `~/battery-logs/`: a full snapshot every 5 s (power supplies, hwmon, thermal, CPU, devfreq, backlight, USB-C, Wi-Fi, top processes, Gleipnir) and a 1 s battery-only line. It writes nothing to sysfs and is not part of `apply-all-tweaks.sh`.
+
+## games/spacehaven-jvm.sh
+Space Haven (Steam 979110) JVM flags, run on the Thor: `spacehaven-jvm.sh [c1|xint|default]`. Not part of `apply-all-tweaks.sh`. [observed 2026-10-24: with the default flags the x86 Zulu 8 JVM under FEX crashed in the New Game and crew menus (NPE at `ShaderProgram.fetchAttributeLocation`, line 286 = a call on `Gdx.gl20`; one `hs_err` showed `ShouldNotReachHere`); `-Xint` and `-XX:TieredStopAtLevel=1` both survived both menus.] [UNVERIFIED — best guess: HotSpot's C2 JIT misbehaves under FEX; no cause was isolated.] The script backs up the game's `config.json` first; a Steam update may rewrite it, so re-run after updates.
