@@ -33,7 +33,7 @@ Each agent owns only the files listed in its prompt, plus three fragment files i
 `<AGENT>-sources.md` (every URL/path used, with what it supports), `<AGENT>-claims.md` (one row per non-trivial claim: doc, claim, tag, confidence), `<AGENT>-open-questions.md` (unanswered/unsourced). Synthesis merges them into `docs/reference/{sources,claims-log,open-questions}.md`.
 
 ## Paths
-Repo root `G:/Projects/Hardware/AynThor`. Subagents cannot see `G:\` via Read/Grep/Write — use **Bash with `G:/...` paths** (e.g. `cat > 'G:/...' <<'EOF'`, `rg`, `git -C`) for all reading and writing. `rg` is available. Windows + Git Bash.
+Repo root `G:/Projects/Hardware/Thor/AynThor`. Subagents cannot see `G:\` via Read/Grep/Write — use **Bash with `G:/...` paths** (e.g. `cat > 'G:/...' <<'EOF'`, `rg`, `git -C`) for all reading and writing. `rg` is available. Windows + Git Bash.
 
 ## Do not
 Edit anything under `refs/` (read-only clones), touch files you don't own, run LAN scans, access any device, or `git commit`.
