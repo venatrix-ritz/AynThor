@@ -10,7 +10,7 @@
 - **The 0.91 A step:** The flat step near 89 % has no documented cause. Seven candidates are separable with one firmware-log capture.
 - **Disagreements:** The four notes disagree in several places, listed in their own section.
 
-*Evidence tags carried from the notes: **[V]** verified in source; **[S]** secondary (forum, README, summariser-read page, fork author's claim); **[U]** unverified; **[OBS]** local device observation. This synthesises four notes dated 2026-10-08 (`research_notes/Thor charge cap during sleep/`). Local citations read `refs/<dir>@<sha7>:path#Lnn`, relative to `G:/Projects/Hardware/AynThor/`. The report writer could not save this file; the main session saved its text unchanged.*
+*Evidence tags carried from the notes: **[V]** verified in source; **[S]** secondary (forum, README, summariser-read page, fork author's claim); **[U]** unverified; **[OBS]** local device observation. This synthesises four notes dated 2026-10-08 (`research_notes/Thor charge cap during sleep/`). Local citations read `refs/<dir>@<sha7>:path#Lnn`, relative to `G:/Projects/Hardware/Thor/AynThor/`. The report writer could not save this file; the main session saved its text unchanged.*
 
 ## The firmware threshold is ignored, and a readback of 0 is the firmware's answer
 

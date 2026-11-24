@@ -3,7 +3,7 @@
 ## Users
 | User | Role | Access | Source |
 |---|---|---|---|
-| Ven | Owner, sole operator, hobbyist developer | Workstation (`G:\Projects\Hardware\AynThor`) and the Thor over SSH key auth (`armada@<thor-ip>`) | `CLAUDE.md` ("Device access", "Git and GitHub") |
+| Ven | Owner, sole operator, hobbyist developer | Workstation (`G:\Projects\Hardware\Thor\AynThor`) and the Thor over SSH key auth (`armada@<thor-ip>`) | `CLAUDE.md` ("Device access", "Git and GitHub") |
 | Device user `armada` | The account the tweaks run as on the Thor (UID 1000) | Passwordless sudo on the Thor, granted by Ven (`/etc/sudoers.d/91-claude-full`) | `CLAUDE.md`; `tweaks/system/thor-display-sync.py` (`HOME` and `XDG_RUNTIME_DIR` hard-coded to UID 1000) |
 | Other contributors | None in this repo | - | `CREDITS.md` lists upstream authors whose code is adapted, not repo contributors |
 
